@@ -1,5 +1,5 @@
 /// The cards of one swipe deck, dealt when it opens: the open assets of the filter's kinds.
-/// Deciding a card keeps it in `queue`, so the deck's Undo can bring it back, and a sort only reorders the queue.
+/// Deciding a card keeps it in `queue`, so the deck's Undo can bring it back. A sort or an Undo only reorders the queue.
 nonisolated struct SwipeDeck: Sendable {
     let filter: MediaFilter
     /// Every dealt card, decided or not, in the order they show.
@@ -27,5 +27,11 @@ nonisolated struct SwipeDeck: Sendable {
     /// Reorders the dealt cards without adding or dropping one. Nil puts back the order they were dealt in.
     mutating func sort(_ order: AssetOrder?, assetsByID: [AssetID: AssetInfo], sizes: SizeCache) {
         queue = order?.sorted(dealt, assetsByID: assetsByID, sizes: sizes) ?? dealt
+    }
+
+    /// Moves one card to the top, so the card Undo brings back shows first whatever the sort. An ID not in the deck is ignored.
+    mutating func bringToFront(_ id: AssetID) {
+        guard let index = queue.firstIndex(of: id) else { return }
+        queue.insert(queue.remove(at: index), at: 0)
     }
 }

@@ -301,12 +301,12 @@ final class AppModel {
         history.swipe(decision, for: id, in: &pending)
     }
 
-    @discardableResult
-    func undo(_ history: inout DeckHistory) -> AssetID? {
+    /// Takes back the deck's last swipe that still stands and puts its card on top of the deck.
+    func undo(_ history: inout DeckHistory, in deck: inout SwipeDeck) {
         var updated = pending
-        guard let id = history.undo(in: &updated) else { return nil }
+        guard let id = history.undo(in: &updated) else { return }
         pending = updated
-        return id
+        deck.bringToFront(id)
     }
 
     func state(of id: AssetID) -> AssetState {

@@ -37,9 +37,7 @@ final class SwipeReviewUITests: XCTestCase {
         sort("Biggest first")
         app.buttons["deck.undo"].tap()
         XCTAssertTrue(waitUntil { deck.remaining.label == count }, "Undo after a sort did not bring the card back")
-
-        sort("Newest first")
-        XCTAssertTrue(waitUntil { deck.top.label == swiped }, "The card did not come back to its place: \(deck.top.label)")
+        XCTAssertTrue(waitUntil { deck.top.label == swiped }, "The undone card is not on top: \(deck.top.label)")
         XCTAssertFalse(app.buttons["deck.done"].isEnabled, "Undo left a pending decision")
 
         leaveExpectingNoPendingDecisions()

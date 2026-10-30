@@ -94,6 +94,7 @@ An asset is in exactly one of these states:
   A month deck offers newest first (the default), oldest first and biggest first; the shuffle deck offers shuffled (the default) and biggest first.
   Biggest first puts unknown sizes last, and equal sizes oldest first.
 - A sort reorders the cards the deck dealt when it opened, decided ones included, so Undo still brings back a card swiped before the sort.
+  Undo puts the card it brings back on top of the deck, whatever the sort.
   The order is set when the deck opens or when you pick a sort; sizes measured later never move a card.
 - The kind and the month deck sort stay picked from deck to deck until the app quits; they are not saved.
   The shuffle deck always opens shuffled.
@@ -186,7 +187,7 @@ An asset is in exactly one of these states:
 
 - Unit tests (Swift Testing) on pure logic with the fake library: state transitions and undo, persistence round trip, free-up candidate selection and protected exclusion, month grouping and month counts under a kind filter, screenshot and video buckets, the shared sort and its tie rules, deck sorts with undo, Apply section sorts, apply ordering and the re-check of protection.
 - UI test on the iOS 26.4 simulator, seeded with `xcrun simctl addmedia` and pre-granted photo access: swipe one left and one right, apply, accept the system delete alert, and check that the library shrank and the Keep album holds the kept asset.
-- UI tests for the sorts: a month deck sorted biggest first shows its biggest card on top with the same card count, Undo after a sort brings the swiped card back, and the month list's Videos filter changes the month counts but not Home's count.
+- UI tests for the sorts: a month deck sorted biggest first shows its biggest card on top with the same card count, Undo after a sort brings the swiped card back on top, and the month list's Videos filter changes the month counts but not Home's count.
 - Build, install and launch on the iPhone with the Personal Team.
 
 ## Deviations

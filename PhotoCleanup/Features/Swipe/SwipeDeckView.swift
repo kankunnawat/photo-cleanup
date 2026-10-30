@@ -180,8 +180,10 @@ struct SwipeDeckView: View {
             }
             .disabled(!hasCard)
             roundButton("arrow.uturn.backward", tint: .orange, size: 48, label: "Undo") {
+                guard var current = deck else { return }
                 withAnimation(.spring(duration: 0.3)) {
-                    model.undo(&history)
+                    model.undo(&history, in: &current)
+                    deck = current
                     refilter()
                 }
             }

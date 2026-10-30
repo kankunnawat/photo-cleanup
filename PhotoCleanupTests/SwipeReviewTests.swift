@@ -50,22 +50,15 @@ struct SwipeDeckTests {
         #expect(open(deck, pending) == [big, oldest, mid])
     }
 
-    @Test func undoAfterASortBringsTheCardBack() {
-        var pending = PendingDecisions()
-        var history = DeckHistory()
+    @Test func bringToFrontMovesOnlyThatCardAndIgnoresAnUnknownOne() {
         var deck = deal()
-        let top = open(deck, pending)[0]
-        history.swipe(.trash, for: top, in: &pending)
-        #expect(open(deck, pending).count == 3)
-
         deck.sort(.biggestFirst, assetsByID: assetsByID, sizes: sizes)
 
-        #expect(history.undo(in: &pending) == top)
-        #expect(pending.isEmpty)
-        #expect(open(deck, pending) == [big, oldest, mid, newest])
+        deck.bringToFront(mid)
+        #expect(deck.queue == [mid, big, oldest, newest])
 
-        deck.sort(.newestFirst, assetsByID: assetsByID, sizes: sizes)
-        #expect(open(deck, pending).first == top)
+        deck.bringToFront(AssetID("missing"))
+        #expect(deck.queue == [mid, big, oldest, newest])
     }
 
     @Test func noOrderPutsBackTheDealtOrder() {
@@ -78,8 +71,8 @@ struct SwipeDeckTests {
     }
 }
 
-final class SwipeFilterTests {
-    let suite = "SwipeFilterTests-\(UUID().uuidString)"
+final class SwipeReviewModelTests {
+    let suite = "SwipeReviewModelTests-\(UUID().uuidString)"
     let directory: URL
     let defaults: UserDefaults
     let persistence: Persistence
@@ -93,6 +86,33 @@ final class SwipeFilterTests {
     isolated deinit {
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: directory)
+    }
+
+    @Test func undoPutsTheCardBackOnTopWithOrWithoutASort() async {
+        let ids = ["newest", "big", "mid", "oldest"].map(AssetID.init)
+        let (newest, big, mid, oldest) = (ids[0], ids[1], ids[2], ids[3])
+        let model = AppModel(library: FakePhotoLibrary(assets: [
+            Fixtures.photo("newest", Fixtures.date(2025, 4)),
+            Fixtures.video("big", Fixtures.date(2025, 3)),
+            Fixtures.photo("mid", Fixtures.date(2025, 2)),
+            Fixtures.video("oldest", Fixtures.date(2025, 1)),
+        ]), persistence: persistence)
+        await model.start()
+        var deck = SwipeDeck(dealing: ids, filter: .all, assetsByID: model.assetsByID, pending: model.pending, protected: model.protected)
+        var history = DeckHistory()
+        let open = { (deck: SwipeDeck) in deck.open(pending: model.pending, protected: model.protected, assetsByID: model.assetsByID) }
+
+        model.swipe(.trash, for: newest, history: &history)
+        model.swipe(.keep, for: big, history: &history)
+        model.undo(&history, in: &deck)
+        #expect(open(deck) == [big, mid, oldest])
+
+        deck.sort(.biggestFirst, assetsByID: model.assetsByID, sizes: SizeCache(bytes: [newest: 10, big: 900, mid: 50, oldest: 300]))
+        #expect(open(deck) == [big, oldest, mid])
+        model.undo(&history, in: &deck)
+
+        #expect(model.pending.isEmpty)
+        #expect(open(deck) == [newest, big, oldest, mid])
     }
 
     @Test func monthRowsFollowTheFilterButHomesOpenCountDoesNot() async {
