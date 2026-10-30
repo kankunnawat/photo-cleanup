@@ -126,7 +126,7 @@ struct FreeUpView: View {
         } else {
             customDate
         }
-        let selection = model.freeUpSelection(before: date)
+        let selection = model.freeUpSelection(before: date, kind: .all, order: .oldestFirst)
         cutoffDate = date
         candidates = selection.candidates
         skippedProtected = selection.skippedProtected

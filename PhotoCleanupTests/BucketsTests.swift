@@ -5,6 +5,17 @@ import Testing
 struct FreeUpCandidatesTests {
     let cutoff = Fixtures.date(2025, 6, 1)
 
+    private func select(
+        _ assets: [AssetInfo],
+        kind: FreeUpKind = .all,
+        order: FreeUpOrder = .oldestFirst,
+        protected: ProtectedSet = ProtectedSet(),
+        pending: PendingDecisions = PendingDecisions(),
+        sizes: SizeCache = SizeCache()
+    ) -> FreeUpSelection {
+        Buckets.freeUpCandidates(assets, before: cutoff, kind: kind, order: order, protected: protected, pending: pending, sizes: sizes)
+    }
+
     @Test func includesOnlyAssetsBeforeTheCutoffOldestFirst() {
         let assets = [
             Fixtures.photo("recent", Fixtures.date(2025, 7)),
@@ -13,7 +24,7 @@ struct FreeUpCandidatesTests {
             Fixtures.photo("undated", nil),
         ]
 
-        let selection = Buckets.freeUpCandidates(assets, before: cutoff, protected: ProtectedSet(), pending: PendingDecisions())
+        let selection = select(assets)
 
         #expect(selection.candidates.map(\.id) == [AssetID("older"), AssetID("old")])
         #expect(selection.skippedProtected == 0)
@@ -31,7 +42,7 @@ struct FreeUpCandidatesTests {
             disabledAlbumIDs: []
         )
 
-        let selection = Buckets.freeUpCandidates(assets, before: cutoff, protected: protected, pending: PendingDecisions())
+        let selection = select(assets, protected: protected)
 
         #expect(selection.candidates.map(\.id) == [AssetID("plain")])
         #expect(selection.skippedProtected == 2)
@@ -46,10 +57,78 @@ struct FreeUpCandidatesTests {
         pending.set(.keep, for: AssetID("keep-me"))
         pending.set(.trash, for: AssetID("trash-me"))
 
-        let selection = Buckets.freeUpCandidates(assets, before: cutoff, protected: ProtectedSet(), pending: pending)
+        let selection = select(assets, pending: pending)
 
         #expect(selection.candidates.map(\.id) == [AssetID("keep-me"), AssetID("trash-me")])
         #expect(selection.kept == [AssetID("keep-me")])
+    }
+
+    @Test func filterKeepsOnlyTheChosenKindAndOtherOnlyUnderAll() {
+        let assets = [
+            Fixtures.photo("photo", Fixtures.date(2025, 1)),
+            Fixtures.video("video", Fixtures.date(2025, 2)),
+            AssetInfo(id: AssetID("other"), kind: .other, creationDate: Fixtures.date(2025, 3)),
+        ]
+
+        #expect(select(assets, kind: .all).candidates.map(\.id) == [AssetID("photo"), AssetID("video"), AssetID("other")])
+        #expect(select(assets, kind: .photos).candidates.map(\.id) == [AssetID("photo")])
+        #expect(select(assets, kind: .videos).candidates.map(\.id) == [AssetID("video")])
+    }
+
+    @Test func skippedCountsOnlyProtectedAssetsOfTheShownKind() {
+        let assets = [
+            Fixtures.photo("protected-photo", Fixtures.date(2025, 1)),
+            Fixtures.video("protected-video", Fixtures.date(2025, 1)),
+            Fixtures.video("plain-video", Fixtures.date(2025, 1)),
+        ]
+        let protected = ProtectedSet(ids: [AssetID("protected-photo"), AssetID("protected-video")])
+
+        let selection = select(assets, kind: .videos, protected: protected)
+
+        #expect(selection.candidates.map(\.id) == [AssetID("plain-video")])
+        #expect(selection.skippedProtected == 1)
+    }
+
+    @Test func pendingKeepsLandInKeptUnderAFilter() {
+        let assets = [
+            Fixtures.photo("kept-photo", Fixtures.date(2025, 1)),
+            Fixtures.video("kept-video", Fixtures.date(2025, 1)),
+            Fixtures.video("open-video", Fixtures.date(2025, 2)),
+        ]
+        var pending = PendingDecisions()
+        pending.set(.keep, for: [AssetID("kept-photo"), AssetID("kept-video")])
+
+        let selection = select(assets, kind: .videos, pending: pending)
+
+        #expect(selection.candidates.map(\.id) == [AssetID("kept-video"), AssetID("open-video")])
+        #expect(selection.kept == [AssetID("kept-video")])
+    }
+
+    @Test func biggestFirstPutsUnknownSizesLastOldestFirst() {
+        let assets = [
+            Fixtures.photo("unknown-new", Fixtures.date(2025, 3)),
+            Fixtures.photo("small", Fixtures.date(2025, 1)),
+            Fixtures.photo("unknown-old", Fixtures.date(2024, 3)),
+            Fixtures.video("big", Fixtures.date(2025, 2)),
+        ]
+        let sizes = SizeCache(bytes: [AssetID("small"): 10, AssetID("big"): 500])
+
+        let selection = select(assets, order: .biggestFirst, sizes: sizes)
+
+        #expect(selection.candidates.map(\.id) == [AssetID("big"), AssetID("small"), AssetID("unknown-old"), AssetID("unknown-new")])
+    }
+
+    @Test func biggestFirstBreaksSizeTiesOldestFirst() {
+        let assets = [
+            Fixtures.photo("tie-new", Fixtures.date(2025, 3)),
+            Fixtures.photo("tie-old", Fixtures.date(2024, 3)),
+            Fixtures.photo("tie-mid", Fixtures.date(2025, 1)),
+        ]
+        let sizes = SizeCache(bytes: [AssetID("tie-new"): 70, AssetID("tie-old"): 70, AssetID("tie-mid"): 70])
+
+        let selection = select(assets, order: .biggestFirst, sizes: sizes)
+
+        #expect(selection.candidates.map(\.id) == [AssetID("tie-old"), AssetID("tie-mid"), AssetID("tie-new")])
     }
 }
 

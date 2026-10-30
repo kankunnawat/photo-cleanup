@@ -263,8 +263,8 @@ final class AppModel {
         pending.set(.trash, for: Buckets.trashable(ids, protected: protected))
     }
 
-    func freeUpSelection(before cutoff: Date) -> FreeUpSelection {
-        Buckets.freeUpCandidates(assets, before: cutoff, protected: protected, pending: pending)
+    func freeUpSelection(before cutoff: Date, kind: FreeUpKind, order: FreeUpOrder) -> FreeUpSelection {
+        Buckets.freeUpCandidates(assets, before: cutoff, kind: kind, order: order, protected: protected, pending: pending, sizes: sizes)
     }
 
     /// Free up's Delete, as one change: tiles the user kept become pending keeps, the rest pending trash.

@@ -1,7 +1,24 @@
 import Foundation
 
+/// Which media kinds Free up lists, and so the only kinds its Delete can queue.
+nonisolated enum FreeUpKind: CaseIterable, Hashable, Sendable {
+    case all, photos, videos
+
+    func includes(_ kind: MediaKind) -> Bool {
+        switch self {
+        case .all: true
+        case .photos: kind == .photo
+        case .videos: kind == .video
+        }
+    }
+}
+
+nonisolated enum FreeUpOrder: CaseIterable, Hashable, Sendable {
+    case oldestFirst, biggestFirst
+}
+
 nonisolated struct FreeUpSelection: Sendable {
-    /// Oldest first.
+    /// In the requested `FreeUpOrder`.
     let candidates: [AssetInfo]
     /// Candidates already pending keep; Free up shows them as kept tiles.
     let kept: Set<AssetID>
@@ -37,19 +54,23 @@ nonisolated enum Buckets {
         }
     }
 
-    /// Unprotected assets created before the cutoff; pending keeps are listed in `kept`.
+    /// Unprotected assets of the chosen kind created before the cutoff; pending keeps are listed in `kept`.
     /// Undated assets are never candidates, because their age is unknown.
+    /// Biggest first puts unknown sizes last; equal sizes fall back to oldest first.
     static func freeUpCandidates(
         _ assets: [AssetInfo],
         before cutoff: Date,
+        kind: FreeUpKind,
+        order: FreeUpOrder,
         protected: ProtectedSet,
-        pending: PendingDecisions
+        pending: PendingDecisions,
+        sizes: SizeCache
     ) -> FreeUpSelection {
         var candidates: [AssetInfo] = []
         var kept: Set<AssetID> = []
         var skipped = 0
         for asset in assets {
-            guard let date = asset.creationDate, date < cutoff else { continue }
+            guard let date = asset.creationDate, date < cutoff, kind.includes(asset.kind) else { continue }
             if protected.contains(asset.id) {
                 skipped += 1
                 continue
@@ -59,7 +80,17 @@ nonisolated enum Buckets {
                 kept.insert(asset.id)
             }
         }
-        candidates.sort { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }
+        let isOlder = { (a: AssetInfo, b: AssetInfo) in (a.creationDate ?? .distantPast) < (b.creationDate ?? .distantPast) }
+        switch order {
+        case .oldestFirst:
+            candidates.sort(by: isOlder)
+        case .biggestFirst:
+            candidates.sort { a, b in
+                let sizeA = sizes[a.id] ?? -1
+                let sizeB = sizes[b.id] ?? -1
+                return sizeA == sizeB ? isOlder(a, b) : sizeA > sizeB
+            }
+        }
         return FreeUpSelection(candidates: candidates, kept: kept, skippedProtected: skipped)
     }
 
