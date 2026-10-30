@@ -49,9 +49,35 @@ struct MonthGroupingTests {
         var pending = PendingDecisions()
         pending.set(.trash, for: AssetID("a"))
 
-        let rows = Buckets.monthRows(groups, pending: pending, protected: ProtectedSet(ids: [AssetID("d")]))
+        let rows = Buckets.monthRows(groups, filter: .all, assetsByID: [:], pending: pending, protected: ProtectedSet(ids: [AssetID("d")]))
 
         #expect(rows.map(\.open) == [2, 0])
+        #expect(rows.map(\.total) == [3, 1])
         #expect(rows.map(\.id) == groups.map(\.id))
+    }
+
+    @Test func monthRowsUnderAFilterCountOnlyThatKind() {
+        let assets = [
+            Fixtures.photo("photo", Fixtures.date(2025, 2)),
+            Fixtures.video("open-video", Fixtures.date(2025, 2)),
+            Fixtures.video("queued-video", Fixtures.date(2025, 2)),
+            AssetInfo(id: AssetID("other"), kind: .other, creationDate: Fixtures.date(2025, 2)),
+            Fixtures.photo("only-photo", Fixtures.date(2025, 1)),
+        ]
+        let groups = MonthGrouping.groups(assets, calendar: Fixtures.calendar)
+        let byID = Dictionary(uniqueKeysWithValues: assets.map { ($0.id, $0) })
+        var pending = PendingDecisions()
+        pending.set(.trash, for: AssetID("queued-video"))
+
+        let rows = { (filter: MediaFilter) in
+            Buckets.monthRows(groups, filter: filter, assetsByID: byID, pending: pending, protected: ProtectedSet())
+        }
+
+        #expect(rows(.all).map(\.open) == [3, 1])
+        #expect(rows(.all).map(\.total) == [4, 1])
+        #expect(rows(.videos).map(\.open) == [1, 0])
+        #expect(rows(.videos).map(\.total) == [2, 0])
+        #expect(rows(.photos).map(\.open) == [1, 1])
+        #expect(rows(.photos).map(\.total) == [1, 1])
     }
 }

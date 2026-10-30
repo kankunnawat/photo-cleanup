@@ -5,7 +5,17 @@ struct MonthPickerView: View {
     @Environment(Router.self) private var router
 
     var body: some View {
+        @Bindable var model = model
         List {
+            Section {
+                Picker("Show", selection: $model.swipeFilter) {
+                    ForEach(MediaFilter.allCases, id: \.self) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("months.kind")
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            }
             Section {
                 Button { router.path.append(.deck(.shuffle)) } label: {
                     Label("Shuffle all months", systemImage: "shuffle")
@@ -24,13 +34,14 @@ struct MonthPickerView: View {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundStyle(.keepGreen)
                             } else {
-                                Text("\(row.open) of \(row.group.assetIDs.count)")
+                                Text("\(row.open) of \(row.total)")
                                     .foregroundStyle(.secondary)
                                     .monospacedDigit()
                             }
                         }
                     }
                     .disabled(row.open == 0)
+                    .accessibilityIdentifier("months.row")
                 }
             }
         }

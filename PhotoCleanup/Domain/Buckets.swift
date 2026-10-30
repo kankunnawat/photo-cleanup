@@ -10,8 +10,10 @@ nonisolated struct FreeUpSelection: Sendable {
 
 nonisolated struct MonthRow: Identifiable, Sendable {
     let group: MonthGroup
-    /// Assets the deck would still show.
+    /// Assets of the row's kind that the deck would still show.
     let open: Int
+    /// Assets of the row's kind, decided or not.
+    let total: Int
 
     var id: String { group.id }
 }
@@ -31,9 +33,22 @@ nonisolated enum Buckets {
         ids.filter { !protected.contains($0) }
     }
 
-    static func monthRows(_ months: [MonthGroup], pending: PendingDecisions, protected: ProtectedSet) -> [MonthRow] {
+    /// The IDs of the kinds `filter` shows. All keeps every ID, even one no longer in the library.
+    static func matching(_ ids: [AssetID], _ filter: MediaFilter, assetsByID: [AssetID: AssetInfo]) -> [AssetID] {
+        guard filter != .all else { return ids }
+        return ids.filter { assetsByID[$0].map { filter.includes($0.kind) } ?? false }
+    }
+
+    static func monthRows(
+        _ months: [MonthGroup],
+        filter: MediaFilter,
+        assetsByID: [AssetID: AssetInfo],
+        pending: PendingDecisions,
+        protected: ProtectedSet
+    ) -> [MonthRow] {
         months.map { group in
-            MonthRow(group: group, open: group.assetIDs.count { isOpen($0, protected: protected, pending: pending) })
+            let ids = matching(group.assetIDs, filter, assetsByID: assetsByID)
+            return MonthRow(group: group, open: ids.count { isOpen($0, protected: protected, pending: pending) }, total: ids.count)
         }
     }
 

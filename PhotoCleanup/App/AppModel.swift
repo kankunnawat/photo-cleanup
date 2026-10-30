@@ -44,10 +44,18 @@ final class AppModel {
         didSet { persistence.saveRecentAlbumIDs(recentAlbumIDs) }
     }
     var errorMessage: String?
+    /// Swipe review's media filter, kept until the app quits. It shapes `monthRows`, never Home's `openCount`.
+    var swipeFilter = MediaFilter.all {
+        didSet { recomputeMonthRows() }
+    }
+    /// The order a month deck opens in: the last one picked in a month deck, kept until the app quits.
+    var monthDeckOrder = AssetOrder.newestFirst
 
     // Derived from the snapshot, decisions, protection and sizes. Rebuilt only when one of those changes,
     // so view bodies read them instead of scanning the library.
+    /// Rows of the kinds `swipeFilter` shows.
     private(set) var monthRows: [MonthRow] = []
+    /// Open assets of every kind, whatever `swipeFilter` is.
     private(set) var openCount = 0
     private(set) var screenshots: [AssetInfo] = []
     private(set) var largeVideos: [AssetInfo] = []
@@ -172,12 +180,20 @@ final class AppModel {
     // MARK: Derived lists
 
     private func decisionsChanged() {
-        monthRows = Buckets.monthRows(snapshot.months, pending: pending, protected: protected)
-        openCount = monthRows.reduce(0) { $0 + $1.open }
+        recomputeMonthRows()
         screenshots = Buckets.screenshots(snapshot.screenshots, protected: protected, pending: pending)
         largeVideos = Buckets.largeVideos(snapshot.videos, protected: protected, pending: pending)
         recomputePendingSummary()
         revision += 1
+    }
+
+    private func recomputeMonthRows() {
+        let rows = { (filter: MediaFilter) in
+            Buckets.monthRows(self.snapshot.months, filter: filter, assetsByID: self.snapshot.assetsByID, pending: self.pending, protected: self.protected)
+        }
+        let all = rows(.all)
+        openCount = all.reduce(0) { $0 + $1.open }
+        monthRows = swipeFilter == .all ? all : rows(swipeFilter)
     }
 
     private func recomputePendingSummary() {

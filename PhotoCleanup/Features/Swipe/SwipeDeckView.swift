@@ -7,7 +7,9 @@ struct SwipeDeckView: View {
 
     let source: DeckSource
 
-    @State private var queue: [AssetID]?
+    @State private var deck: SwipeDeck?
+    /// Nil is the order the cards were dealt in, which only the shuffle deck offers.
+    @State private var order: AssetOrder?
     @State private var open: [AssetID] = []
     /// Created with the deck and gone when it closes, so Undo never reaches decisions made elsewhere.
     @State private var history = DeckHistory()
@@ -21,7 +23,7 @@ struct SwipeDeckView: View {
         VStack(spacing: 16) {
             header(remaining: open.count)
             ZStack {
-                if open.isEmpty, queue != nil {
+                if open.isEmpty, deck != nil {
                     finished
                 }
                 ForEach(Array(open.prefix(3).enumerated().reversed()), id: \.element) { depth, id in
@@ -53,6 +55,9 @@ struct SwipeDeckView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                SortMenu(selection: Binding(get: { order }, set: { sort($0) }), orders: orders, label: { $0?.label ?? "Shuffled" }, id: "deck.sort")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("Done") { router.openApply() }
                     .bold()
                     .disabled(model.pendingSummary.isEmpty)
@@ -64,7 +69,7 @@ struct SwipeDeckView: View {
         .assetPreview($preview, choice: choice(for:))
         .sheet(item: $albumTarget, onDismiss: refilter) { AlbumPicker(assetID: $0) }
         .onAppear {
-            if queue == nil { queue = makeQueue() }
+            if deck == nil { deal() }
             refilter()
         }
         // The card under the album picker stays until the picker closes.
@@ -81,19 +86,44 @@ struct SwipeDeckView: View {
         }
     }
 
-    /// Rebuilds the open cards from the queue fixed when the deck opened.
-    private func refilter() {
-        open = Buckets.reviewDeck(queue ?? [], pending: model.pending, protected: model.protected)
-            .filter { model.assetsByID[$0] != nil }
+    private var orders: [AssetOrder?] {
+        switch source {
+        case .month: [.newestFirst, .oldestFirst, .biggestFirst]
+        case .shuffle: [nil, .biggestFirst]
+        }
     }
 
-    private func makeQueue() -> [AssetID] {
-        switch source {
-        case .month(let group):
-            let current = model.months.first { $0.id == group.id } ?? group
-            return Buckets.reviewDeck(current.assetIDs, pending: model.pending, protected: model.protected)
-        case .shuffle:
-            return Buckets.reviewDeck(model.assets.map(\.id), pending: model.pending, protected: model.protected).shuffled()
+    /// Rebuilds the open cards from the deck dealt when it opened.
+    private func refilter() {
+        open = deck?.open(pending: model.pending, protected: model.protected, assetsByID: model.assetsByID) ?? []
+    }
+
+    /// A month deck opens in the order last picked in one; the shuffle deck always opens shuffled.
+    private func deal() {
+        if case .month = source { order = model.monthDeckOrder }
+        var dealt = makeDeck()
+        dealt.sort(order, assetsByID: model.assetsByID, sizes: model.sizes)
+        deck = dealt
+    }
+
+    /// The open cards of the kind picked on the month list, in the source's order.
+    private func makeDeck() -> SwipeDeck {
+        let ids: [AssetID] = switch source {
+        case .month(let group): (model.months.first { $0.id == group.id } ?? group).assetIDs
+        case .shuffle: model.assets.map(\.id).shuffled()
+        }
+        return SwipeDeck(dealing: ids, filter: model.swipeFilter, assetsByID: model.assetsByID, pending: model.pending, protected: model.protected)
+    }
+
+    /// Reorders the dealt cards, decided ones included, so Undo still finds every card this deck swiped.
+    private func sort(_ picked: AssetOrder?) {
+        order = picked
+        if case .month = source, let picked { model.monthDeckOrder = picked }
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            deck?.sort(picked, assetsByID: model.assetsByID, sizes: model.sizes)
+            refilter()
         }
     }
 
@@ -128,6 +158,11 @@ struct SwipeDeckView: View {
         HStack {
             Label("\(remaining) left", systemImage: "square.stack")
                 .accessibilityIdentifier("deck.remaining")
+            if let filter = deck?.filter, filter != .all {
+                Text("\(filter.label) only")
+                    .fontWeight(.regular)
+                    .foregroundStyle(.secondary)
+            }
             Spacer()
             Label("\(model.pendingSummary.keepCount)", systemImage: "heart.fill")
                 .foregroundStyle(.keepGreen)
@@ -181,7 +216,7 @@ struct SwipeDeckView: View {
         ContentUnavailableView {
             Label("All done here", systemImage: "checkmark.seal.fill")
         } description: {
-            Text("Every photo in this deck has a decision.")
+            Text(deck?.filter == .videos ? "Every video in this deck has a decision." : "Every photo in this deck has a decision.")
         } actions: {
             Button("Review and apply") { router.openApply() }
                 .buttonStyle(.borderedProminent)
