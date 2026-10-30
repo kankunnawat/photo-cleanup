@@ -4,10 +4,10 @@
 
 Photo Cleanup is a free, open-source iPhone app that clears photo storage and keeps the photos that matter to you.
 
-- **Swipe review.** Pick a month and swipe through it. Swipe right to keep a photo and left to queue it for deletion.
+- **Swipe review.** Pick a month and swipe through it. Swipe right to keep a photo and left to queue it for deletion. Pick Photos or Videos to review only that kind, and sort a deck biggest first.
 - **Free up space.** Delete everything older than a date you pick, except the photos you protect. Tap a photo to keep it. Pick Photos or Videos to delete only that kind, and sort the biggest first.
-- **Large videos.** Lists your videos biggest first, so you can pick the ones to delete.
-- **Screenshots.** Every screenshot starts selected, so clearing them takes a few taps.
+- **Large videos.** Lists your videos biggest first, so you can pick the ones to delete. You can sort them newest first instead.
+- **Screenshots.** Every screenshot starts selected, so clearing them takes a few taps. Sort them biggest first to find the large ones.
 - **The Keep album.** Photos you keep go into a normal Photos album named Keep. It survives a reinstall, and you can edit it in Photos.
 - **Albums and sharing.** Add the photo on screen to any album, or a new one, and share it through the iOS share sheet.
 - **Protected albums.** Every album you made is protected by default. Switch one off in Settings to let its photos come up for deletion.

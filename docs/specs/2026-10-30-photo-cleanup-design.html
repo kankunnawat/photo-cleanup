@@ -157,6 +157,7 @@
     <div class="mini" role="img" aria-label="Photo Cleanup swipe review: one photo card per swipe, right keeps it in the Keep album, left queues a delete">
       <div class="url"><b>Photo Cleanup</b><span>Swipe review</span></div>
       <div class="bar"><span class="pill on">Mar 2024 &middot; 312</span><span class="pill">Feb 2024 &middot; 280</span><span class="pill">Shuffle</span></div>
+      <div class="bar"><span class="pill on">All</span><span class="pill">Photos</span><span class="pill">Videos</span><span class="pill">Sort: biggest first</span></div>
       <div class="scr">
         <div class="deck"><span class="side">&larr; Delete</span><span class="sk"></span><span class="side">Keep &rarr;</span></div>
         <div class="spot good"><span>Swipe right: <ins>Keep album</ins></span><span class="note">one swipe each</span></div>
@@ -185,7 +186,7 @@
     <div class="kicker">3 &middot; How it runs</div>
     <h2>Nothing is deleted until you press Apply</h2>
     <ol class="steps">
-      <li><span class="n">1</span><span>Swipe a month: right keeps, left deletes, Undo takes back a swipe made in this deck and never touches a choice made elsewhere. Free up space, Screenshots and Large videos queue deletes too, never for a protected photo; in Free up space, tap a photo to keep it and tap again to clear it, pick Photos or Videos to delete only that kind, and sort the biggest first. Touch and hold a photo, or tap a swipe card, to see it full screen with a button that changes its choice.</span></li>
+      <li><span class="n">1</span><span>Swipe a month: right keeps, left deletes, Undo takes back a swipe made in this deck and never touches a choice made elsewhere. Pick Photos or Videos above the months to review only that kind, and sort a deck biggest first; Undo still brings back a card swiped before the sort. Free up space, Screenshots and Large videos queue deletes too, never for a protected photo; in Free up space, tap a photo to keep it and tap again to clear it, pick Photos or Videos to delete only that kind, and sort the biggest first. Screenshots, Large videos and Apply sort too. Touch and hold a photo, or tap a swipe card, to see it full screen with a button that changes its choice.</span></li>
       <li><span class="n">2</span><span>Each choice waits as a pending decision, saved on the phone half a second after your last choice and again when you leave the app, so closing it loses nothing. On the Apply screen, tap a photo to switch it between keep and delete in place. Take back all clears a whole section, and Restore all puts it back.</span></li>
       <li><span class="n">3</span><span>Apply adds the keepers to the Keep album first, and drops any queued delete that became protected since.</span></li>
       <li><span class="n">4</span><span>Then one delete for the rest. iOS shows its own confirmation; Cancel leaves the deletes queued.</span></li>
@@ -196,16 +197,16 @@
 
   <article class="panel reach">
     <div class="kicker">4 &middot; Where it goes</div>
-    <h2>All new: ten screens, twelve data shapes, one album</h2>
+    <h2>All new: ten screens, sixteen data shapes, one album</h2>
     <div class="map" role="img" aria-label="Everything the app adds, and what it leaves alone">
       <div class="kind"><b>Screens<span>10</span></b><div class="blocks"><span class="blk new">Permission gate</span><span class="blk new">Home</span><span class="blk new">Swipe review</span><span class="blk new">Free up space</span><span class="blk new">Screenshots</span><span class="blk new">Large videos</span><span class="blk new">Apply</span><span class="blk new">Full-screen preview</span><span class="blk new">Settings</span><span class="blk new">iCloud notice</span></div></div>
-      <div class="kind"><b>Data shapes<span>12</span></b><div class="blocks"><span class="blk new">Asset ID</span><span class="blk new">Asset snapshot</span><span class="blk new">Decision</span><span class="blk new">Pending decisions</span><span class="blk new">Deck undo history</span><span class="blk new">Tile toggles</span><span class="blk new">Apply section</span><span class="blk new">Preview choice</span><span class="blk new">Library snapshot</span><span class="blk new">Protected set</span><span class="blk new">Size cache</span><span class="blk new">Cleanup log</span></div></div>
+      <div class="kind"><b>Data shapes<span>16</span></b><div class="blocks"><span class="blk new">Asset ID</span><span class="blk new">Asset snapshot</span><span class="blk new">Decision</span><span class="blk new">Pending decisions</span><span class="blk new">Deck undo history</span><span class="blk new">Swipe deck</span><span class="blk new">Kind filter</span><span class="blk new">Sort order</span><span class="blk new">Frozen order</span><span class="blk new">Tile toggles</span><span class="blk new">Apply section</span><span class="blk new">Preview choice</span><span class="blk new">Library snapshot</span><span class="blk new">Protected set</span><span class="blk new">Size cache</span><span class="blk new">Cleanup log</span></div></div>
       <div class="kind"><b>Photo access<span>3</span></b><div class="blocks"><span class="blk new">Photo library protocol</span><span class="blk new">PhotoKit version</span><span class="blk new">In-memory fake for tests</span></div></div>
       <div class="kind"><b>In Photos<span>1</span></b><div class="blocks"><span class="blk new">Keep album</span></div></div>
       <div class="kind"><b>Unchanged<span>4</span></b><div class="blocks"><span class="blk same">Favorites</span><span class="blk same">Your albums</span><span class="blk same">Recently Deleted</span><span class="blk same">Your backup</span></div></div>
       <div class="legend"><span>+ new</span><span>~ changed</span><span>&minus; removed</span><span>= unchanged</span></div>
     </div>
-    <p class="small">Names: <code>AssetID</code>, <code>AssetInfo</code>, <code>Decision</code>, <code>PendingDecisions</code>, <code>DeckHistory</code>, <code>TileToggles</code>, <code>ApplySection</code>, <code>PreviewChoice</code>, <code>LibrarySnapshot</code>, <code>ProtectedSet</code>, <code>SizeCache</code>, <code>CleanupLog</code>, <code>PhotoLibrary</code></p>
+    <p class="small">Names: <code>AssetID</code>, <code>AssetInfo</code>, <code>Decision</code>, <code>PendingDecisions</code>, <code>DeckHistory</code>, <code>SwipeDeck</code>, <code>MediaFilter</code>, <code>AssetOrder</code>, <code>FrozenOrder</code>, <code>TileToggles</code>, <code>ApplySection</code>, <code>PreviewChoice</code>, <code>LibrarySnapshot</code>, <code>ProtectedSet</code>, <code>SizeCache</code>, <code>CleanupLog</code>, <code>PhotoLibrary</code></p>
   </article>
 </section>
 
@@ -230,6 +231,8 @@
     <li>Undo works per swipe deck, and tiles in Free up space and Apply change in place, so nothing shifts under your finger. A tile leaves only when you close the viewer after adding its photo to a protected album.</li>
     <li>Touch and hold a tile, or tap a swipe card, to see it full screen. A tap on a tile still flips its choice.</li>
     <li>In Free up space, the All, Photos and Videos filter decides what Delete removes, so with Videos picked every photo stays. The grid order, oldest or biggest first, is set when the screen opens or when you change the date, kind or sort, so tiles do not move while sizes are still being measured.</li>
+    <li>Swipe review, Screenshots, Large videos and Apply sort too, and each sets its order only when it opens or when you pick a sort, so nothing moves while sizes are measured. Large videos no longer re-sorts as sizes arrive. Apply has no kind filter, so every item it deletes stays on screen.</li>
+    <li>Swipe review's All, Photos and Videos filter shapes the month counts and the decks; Home's count still covers every kind. The filter and the month deck sort last until the app quits; the shuffle deck always opens shuffled.</li>
     <li>Signed with your free Personal Team; you reinstall weekly.</li>
     <li>Similar-photo detection waits for phase 2.</li>
   </ul>

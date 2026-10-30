@@ -48,10 +48,15 @@ So it survives an app reinstall, it syncs where Photos syncs, and the user can e
   Persisted as JSON in Application Support (saved on a 0.5 s debounce and flushed when the app leaves the foreground), so closing the app never loses swipe work.
 - `DeckHistory`: the undo history of one swipe deck, discarded when the deck closes.
   Undo only clears a decision that deck made, so it can never queue a delete.
+- `SwipeDeck`: the cards one swipe deck dealt when it opened, decided ones included, in display order.
+  A sort only reorders them, so Undo can always bring a swiped card back.
+- `MediaFilter` (all, photos, videos) and `AssetOrder` (oldest first, newest first, biggest first): the kind filter and the sorts a screen can offer.
+  `AssetOrder` holds the one sort every screen uses.
+- `FrozenOrder`: the item order Screenshots and Large videos fix when they open or the sort changes.
 - `ProtectedSet`: a set of `AssetID`s, rebuilt from the library (Keep album ∪ Favorites ∪ switched-on albums).
 - `LibrarySnapshot`: the assets, months and protected set, built off the main thread and swapped in at once after each library change.
 - `TileToggles`: the fixed tile order of a Free up grid plus which tiles the user flipped, so taps never shift the grid.
-- `ApplySection`: one section of the Apply grid, with its fixed tile order, the section's decision, and each tile's current decision, or none once taken back.
+- `ApplySection`: one section of the Apply grid, with its tile order (fixed until you pick a sort), the section's decision, and each tile's current decision, or none once taken back.
 - `PreviewChoice`: the optional status (text and tint) and the actions (title, tint, closure) that the preview shows for one asset, built by each screen from the state it already owns.
 - `SizeCache`: `AssetID -> byte count`, persisted, filled in the background from `PHAssetResource` (`fileSize` key).
 - `CleanupLog`: one entry per applied cleanup (date, items deleted, bytes).
@@ -80,7 +85,18 @@ An asset is in exactly one of these states:
 ### Swipe review
 
 - Pick a month (newest first, with counts) or "Shuffle".
-- The deck shows only undecided, unprotected assets of that month.
+- Above the months, pick a kind: All, Photos or Videos (All by default).
+  The month counts ("N of M") count only that kind, a month with nothing of that kind left shows as done, and Shuffle deals only that kind.
+  Home's "to review" count always covers every kind.
+- The deck shows only undecided, unprotected assets of that month and kind.
+  With Photos or Videos picked, the deck header says "Photos only" or "Videos only", and a finished deck says "Every video in this deck has a decision." for videos.
+- Sort from the toolbar.
+  A month deck offers newest first (the default), oldest first and biggest first; the shuffle deck offers shuffled (the default) and biggest first.
+  Biggest first puts unknown sizes last, and equal sizes oldest first.
+- A sort reorders the cards the deck dealt when it opened, decided ones included, so Undo still brings back a card swiped before the sort.
+  The order is set when the deck opens or when you pick a sort; sizes measured later never move a card.
+- The kind and the month deck sort stay picked from deck to deck until the app quits; they are not saved.
+  The shuffle deck always opens shuffled.
 - Swipe right: keep. Swipe left: delete. Buttons do the same. Undo reverts the last swipe.
 - Videos show a duration badge, and a tap opens any card full screen (see Preview).
 - Each card shows date and size.
@@ -108,13 +124,20 @@ An asset is in exactly one of these states:
 ### Screenshots and large videos
 
 - Screenshots: grid of screenshot assets that are not protected, all selected; tap to deselect.
-- Large videos: videos sorted by size, biggest first, none selected; tap to select.
+- Large videos: grid of videos that are not protected, none selected; tap to select.
+- Sort from the toolbar: Screenshots offer newest first (the default) and biggest first; Large videos offer biggest first (the default) and newest first.
+  The Large videos hint names the picked order.
+- The order is set when the screen opens or when you pick a sort, so sizes measured later never move a tile.
+  A decided or protected item leaves the grid, and a new one goes last.
 - Both add the selection to pending trash and open the apply screen.
 
 ### Apply screen
 
 - Lists pending keeps and pending deletes with sizes, in a grid fixed when the screen opens, so tiles never move while you tap.
   One exception: a tile leaves when the viewer closes after your own album add cleared its pending delete (see the albums and sharing spec).
+- Sort from the toolbar: the order the decisions were made in (the default) or biggest first.
+  Both sections sort together, and a sort only moves tiles: each keeps its decision, so taps, Take back all, Restore all and the counts work as before.
+  There is no kind filter, so every item Apply deletes stays on screen.
 - A tap switches a tile between keep and delete in place.
   A delete switched to keep shows a green "Keep" badge, and a keep switched to delete shows a red "Delete" badge.
 - Each section has one button in its header.
@@ -161,8 +184,9 @@ An asset is in exactly one of these states:
 
 ## Verification
 
-- Unit tests (Swift Testing) on pure logic with the fake library: state transitions and undo, persistence round trip, free-up candidate selection and protected exclusion, month grouping, screenshot and video buckets, apply ordering and the re-check of protection.
+- Unit tests (Swift Testing) on pure logic with the fake library: state transitions and undo, persistence round trip, free-up candidate selection and protected exclusion, month grouping and month counts under a kind filter, screenshot and video buckets, the shared sort and its tie rules, deck sorts with undo, Apply section sorts, apply ordering and the re-check of protection.
 - UI test on the iOS 26.4 simulator, seeded with `xcrun simctl addmedia` and pre-granted photo access: swipe one left and one right, apply, accept the system delete alert, and check that the library shrank and the Keep album holds the kept asset.
+- UI tests for the sorts: a month deck sorted biggest first shows its biggest card on top with the same card count, Undo after a sort brings the swiped card back, and the month list's Videos filter changes the month counts but not Home's count.
 - Build, install and launch on the iPhone with the Personal Team.
 
 ## Deviations
@@ -174,6 +198,8 @@ An asset is in exactly one of these states:
 - The Apply tap moved from taking a decision back to switching it to the other decision, after the user expected a tapped delete to move to Keep.
 - Apply and Free up tiles are no longer fixed for the whole visit: the albums feature lets the viewer protect a photo, and its tile leaves when the viewer closes, so neither screen counts a photo whose pending delete the add cleared.
   A tile taken back before the add stays, and Restore all can queue it again; Apply skips it and reports it.
+- Large videos no longer re-sorts while sizes are measured: like every other screen, it sets its order when it opens or when you pick a sort.
+  A video whose size arrives later stays where it is, even if it is bigger than the videos above it; reopening the screen or picking another sort re-sorts the grid.
 
 ## Not yet specified
 
