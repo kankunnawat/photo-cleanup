@@ -81,7 +81,7 @@ final class SwipeReviewUITests: XCTestCase {
         for index in 0..<rows.count where rows.element(boundBy: index).isEnabled {
             rows.element(boundBy: index).tap()
             XCTAssertTrue(top.waitForExistence(timeout: 10), "The month deck showed no card")
-            XCTAssertTrue(waitUntil { (try? self.bytes(in: top.label)) != nil }, "The top card showed no size: \(top.label)")
+            XCTAssertTrue(waitUntil { size(in: top.label) != nil }, "The top card showed no size: \(top.label)")
             let topBytes = try bytes(in: top.label)
             let behind = try app.descendants(matching: .any).matching(identifier: "deck.card.behind").allElementsBoundByIndex.map { try bytes(in: $0.label) }
             if behind.contains(where: { $0 > topBytes }) { return (top, remaining) }
@@ -94,18 +94,6 @@ final class SwipeReviewUITests: XCTestCase {
     private func sort(_ order: String) {
         app.buttons["deck.sort"].tap()
         app.buttons[order].tap()
-    }
-
-    /// Reads the size a card shows, such as "23.8 MB".
-    private func bytes(in label: String) throws -> Double {
-        let match = try XCTUnwrap(label.firstMatch(of: /([0-9.]+) (bytes|KB|MB|GB)/), "No size in \(label)")
-        let unit: Double = switch match.2 {
-        case "KB": 1e3
-        case "MB": 1e6
-        case "GB": 1e9
-        default: 1
-        }
-        return try XCTUnwrap(Double(match.1)) * unit
     }
 
     private func leaveExpectingNoPendingDecisions() {

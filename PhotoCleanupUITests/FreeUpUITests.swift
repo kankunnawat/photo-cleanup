@@ -36,13 +36,13 @@ final class FreeUpUITests: XCTestCase {
         tiles.firstMatch.tap()
         XCTAssertTrue(keptTile.waitForExistence(timeout: 10), "Tap did not keep the tile")
         let countWithKeep = count.label
-        let oldestFirstFrame = keptTile.frame
 
-        // Each seeded month has a small photo and a big one, and older months get smaller big photos, so the oldest is not the biggest.
         // A UI-test launch measures sizes again; sorting before that lands would keep the oldest-first order.
         XCTAssertTrue(app.staticTexts["up to"].waitForExistence(timeout: 30), "Sizes were still being measured")
+        // Seeded big photos get smaller with age, so oldest first is never already biggest first.
+        XCTAssertFalse(isBiggestFirst(shownSizes()), "Oldest first was already biggest first; this test cannot tell the orders apart")
         sort("Biggest first")
-        XCTAssertTrue(waitUntil { keptTile.frame != oldestFirstFrame }, "Biggest first did not reorder the grid")
+        XCTAssertTrue(waitUntil { self.isBiggestFirst(self.shownSizes()) }, "Biggest first did not sort the tiles by size: \(shownSizes())")
         XCTAssertEqual(count.label, countWithKeep, "Changing the sort lost the keep")
 
         // Biggest first can put the kept tile under the Delete bar; oldest first puts it back at the top.
@@ -62,6 +62,15 @@ final class FreeUpUITests: XCTestCase {
         let tiles = app.descendants(matching: .any).matching(identifier: "freeUp.tile")
         XCTAssertTrue(tiles.firstMatch.waitForExistence(timeout: 10), "Free up showed no photos; seed the simulator")
         return tiles
+    }
+
+    /// The sizes on the tiles on screen, in grid order. A tile and its size text can both report a size, which repeats it.
+    private func shownSizes() -> [Double] {
+        app.descendants(matching: .any).matching(identifier: "freeUp.tile").allElementsBoundByIndex.compactMap { size(in: $0.label) }
+    }
+
+    private func isBiggestFirst(_ sizes: [Double]) -> Bool {
+        sizes.count >= 2 && zip(sizes, sizes.dropFirst()).allSatisfy { $0 >= $1 }
     }
 
     private func sort(_ order: String) {
