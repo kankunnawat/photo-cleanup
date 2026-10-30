@@ -84,7 +84,8 @@ for index in 0..<count {
         context.fillEllipse(in: CGRect(x: center.x - size / 2, y: center.y - size / 2, width: size, height: size))
     }
 
-    let captured = Calendar.current.date(byAdding: .month, value: -index, to: Date())!
+    // Noon, so the big photo a minute earlier stays in the same day and month.
+    let captured = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Calendar.current.date(byAdding: .month, value: -index, to: Date())!)!
     write(context, to: outputDirectory.appendingPathComponent("seed-\(stamp)-\(index).jpg"), captured: captured)
 
     let band = count == 1 ? newestBand : newestBand - (newestBand - oldestBand) * index / (count - 1)
