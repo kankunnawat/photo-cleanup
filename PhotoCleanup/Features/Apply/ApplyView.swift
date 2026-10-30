@@ -7,11 +7,13 @@ struct ApplyView: View {
     @State private var isRunning = false
     @State private var report: ApplyReport?
     @State private var failure: String?
-    // Tiles stay in place until the screen is left, except a tile an album add in the viewer protected.
+    // Tiles stay in place until the screen is left or the user picks a sort, except a tile an album add in the viewer protected.
     // Every change writes through to pending decisions, so leaving the screen keeps it.
     @State private var keepTiles = ApplySection(ids: [], decision: .keep)
     @State private var trashTiles = ApplySection(ids: [], decision: .trash)
     @State private var hasFrozen = false
+    /// Nil is the order the decisions were made in.
+    @State private var order: AssetOrder?
     /// Counts the user's tile changes; opening the screen and applying also change the counts but get no tick.
     @State private var tileEdits = 0
     /// The viewer pages through the section of the tile that opened it.
@@ -68,11 +70,16 @@ struct ApplyView: View {
         .navigationBarBackButtonHidden(isRunning)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                SortMenu(selection: $order, orders: [nil, .biggestFirst], label: { $0?.label ?? "Order decided" }, id: "apply.sort")
+                    .disabled(isRunning)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("Home") { router.popToRoot() }
                     .disabled(isRunning)
                     .accessibilityIdentifier("apply.home")
             }
         }
+        .onChange(of: order) { sortTiles() }
         .safeAreaInset(edge: .bottom) {
             if keepCount > 0 || trashCount > 0 {
                 applyButton(keeps: keepCount, trash: trashCount)
@@ -233,9 +240,16 @@ struct ApplyView: View {
         }
     }
 
+    /// Builds the sections in the picked order, so tiles left after a cancelled delete keep it.
     private func freeze() {
         keepTiles = ApplySection(ids: model.pending.keeps, decision: .keep)
         trashTiles = ApplySection(ids: model.pending.trash, decision: .trash)
+        sortTiles()
+    }
+
+    private func sortTiles() {
+        keepTiles.sort(order, assetsByID: model.assetsByID, sizes: model.sizes)
+        trashTiles.sort(order, assetsByID: model.assetsByID, sizes: model.sizes)
     }
 
     /// An album add in the viewer clears a pending delete; that tile leaves, so no tap or Restore all queues it again.

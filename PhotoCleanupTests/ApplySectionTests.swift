@@ -130,6 +130,47 @@ struct ApplySectionTests {
         #expect(!section.hasDecisions)
     }
 
+    @Test func sortMovesTilesButKeepsEachDecisionAndTheCounts() {
+        var section = ApplySection(ids: ids, decision: .trash)
+        section.takeBackAll()
+        section.tap(ids[0])
+        section.tap(ids[1])
+        section.tap(ids[1])
+        let sizes = SizeCache(bytes: [ids[0]: 10, ids[1]: 100, ids[2]: 500, ids[3]: 900])
+
+        section.sort(.biggestFirst, assetsByID: [:], sizes: sizes)
+
+        #expect(section.ids == [ids[3], ids[2], ids[1], ids[0]])
+        #expect(section.decision(for: ids[0]) == .trash)
+        #expect(section.decision(for: ids[1]) == .keep)
+        #expect(section.decision(for: ids[2]) == nil)
+        #expect(section.decision(for: ids[3]) == nil)
+        #expect(section.count(of: .trash) == 1)
+        #expect(section.count(of: .keep) == 1)
+        #expect(section.tap(ids[2]) == .trash)
+
+        section.sort(nil, assetsByID: [:], sizes: sizes)
+
+        #expect(section.ids == ids)
+        #expect(section.count(of: .trash) == 2)
+        #expect(section.count(of: .keep) == 1)
+    }
+
+    @Test func aDroppedTileStaysOutAfterASort() {
+        var section = ApplySection(ids: ids, decision: .trash)
+        var pending = PendingDecisions()
+        pending.set(.trash, for: [ids[0], ids[1], ids[3]])
+        section.dropTiles(disagreeingWith: pending)
+        let sizes = SizeCache(bytes: [ids[0]: 10, ids[1]: 100, ids[2]: 500, ids[3]: 900])
+
+        section.sort(.biggestFirst, assetsByID: [:], sizes: sizes)
+        #expect(section.ids == [ids[3], ids[1], ids[0]])
+
+        section.sort(nil, assetsByID: [:], sizes: sizes)
+        #expect(section.ids == [ids[0], ids[1], ids[3]])
+        #expect(section.count(of: .trash) == 3)
+    }
+
     @Test func idsOutsideTheSectionAreIgnored() {
         var section = ApplySection(ids: ids, decision: .trash)
         let stranger = AssetID("z")
