@@ -1,7 +1,7 @@
 import XCTest
 
-/// Needs seeded media whose newest month holds at least two open items, newest a photo and a bigger video:
-/// run `scripts/seed-simulator.sh <udid>` first. Leaves no pending decision behind.
+/// The deck tests need a month whose top card is smaller than a card behind it, such as a photo above a video.
+/// SwipeAndApplyUITests uses up two random items per run, so after many runs add media again. Leaves no pending decision behind.
 @MainActor
 final class SwipeReviewUITests: XCTestCase {
     private let app = XCUIApplication()
@@ -11,7 +11,7 @@ final class SwipeReviewUITests: XCTestCase {
     }
 
     func testBiggestFirstPutsTheBiggestCardOnTop() throws {
-        let deck = try openNewestMonth()
+        let deck = try openMonthWithABiggerCardBehindTheTop()
         let newestFirstTop = deck.top.label
         let count = deck.remaining.label
 
@@ -28,7 +28,7 @@ final class SwipeReviewUITests: XCTestCase {
     }
 
     func testUndoAfterASortBringsTheCardBack() throws {
-        let deck = try openNewestMonth()
+        let deck = try openMonthWithABiggerCardBehindTheTop()
         let swiped = deck.top.label
         let count = deck.remaining.label
 
@@ -67,23 +67,27 @@ final class SwipeReviewUITests: XCTestCase {
         XCTAssertTrue(waitUntil { rows.allElementsBoundByIndex.map(\.label) == allLabels }, "All did not bring the counts back")
     }
 
-    /// Opens the newest month once sizes are measured, so a size sort sees every size and each card shows one.
-    private func openNewestMonth() throws -> (top: XCUIElement, remaining: XCUIElement) {
+    /// Opens the first month whose top card is not its biggest, once sizes are measured, so a size sort has to move a card.
+    private func openMonthWithABiggerCardBehindTheTop() throws -> (top: XCUIElement, remaining: XCUIElement) {
         app.launchToHome()
         XCTAssertTrue(app.staticTexts["up to, on device"].waitForExistence(timeout: 30), "Sizes were still being measured")
         app.buttons["mode.swipe"].tap()
-        let row = app.buttons.matching(identifier: "months.row").firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 10), "Swipe review showed no months; seed the simulator")
-        XCTAssertTrue(row.isEnabled, "The newest month has nothing left to review")
-        row.tap()
+        let rows = app.buttons.matching(identifier: "months.row")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10), "Swipe review showed no months; seed the simulator")
 
         let top = app.descendants(matching: .any).matching(identifier: "deck.card").firstMatch
         let remaining = app.staticTexts.matching(identifier: "deck.remaining").firstMatch
-        XCTAssertTrue(top.waitForExistence(timeout: 10), "The month deck showed no card")
-        XCTAssertTrue(waitUntil { (try? self.bytes(in: top.label)) != nil }, "The top card showed no size: \(top.label)")
-        let left = try XCTUnwrap(remaining.label.firstMatch(of: /(\d+) left/).flatMap { Int($0.1) }, "Unexpected count: \(remaining.label)")
-        XCTAssertGreaterThanOrEqual(left, 2, "The newest month needs two open items")
-        return (top, remaining)
+        for index in 0..<rows.count where rows.element(boundBy: index).isEnabled {
+            rows.element(boundBy: index).tap()
+            XCTAssertTrue(top.waitForExistence(timeout: 10), "The month deck showed no card")
+            XCTAssertTrue(waitUntil { (try? self.bytes(in: top.label)) != nil }, "The top card showed no size: \(top.label)")
+            let topBytes = try bytes(in: top.label)
+            let behind = try app.descendants(matching: .any).matching(identifier: "deck.card.behind").allElementsBoundByIndex.map { try bytes(in: $0.label) }
+            if behind.contains(where: { $0 > topBytes }) { return (top, remaining) }
+            app.navigationBars.buttons["BackButton"].tap()
+            XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10), "Back did not return to the months")
+        }
+        return try XCTUnwrap(nil, "No month has a card bigger than its top one; add a video older than a photo of the same month and run again")
     }
 
     private func sort(_ order: String) {
