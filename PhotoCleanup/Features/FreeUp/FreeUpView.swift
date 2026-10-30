@@ -25,7 +25,10 @@ struct FreeUpView: View {
 
     @State private var cutoff: Cutoff = .three
     @State private var customDate = Calendar.current.date(byAdding: .year, value: -1, to: .now) ?? .now
-    // Frozen when the screen opens or the cutoff changes, so tiles stay put while the user taps.
+    @State private var kind: FreeUpKind = .all
+    @State private var order: FreeUpOrder = .oldestFirst
+    // Frozen when the screen opens or the cutoff, kind or order changes, so tiles stay put while the user taps
+    // and while sizes are still being measured.
     // Closing the viewer only drops tiles that became protected.
     @State private var cutoffDate = Date.now
     @State private var candidates: [AssetInfo] = []
@@ -42,6 +45,11 @@ struct FreeUpView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     cutoffPicker
+                    Picker("Show", selection: $kind) {
+                        ForEach(FreeUpKind.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("freeUp.kind")
                     summary(count: deleteCount, bytes: model.sizes.total(of: tiles.unflipped))
                     Label(SafetyCopy.backup, systemImage: "exclamationmark.triangle.fill")
                         .font(.footnote)
@@ -61,6 +69,10 @@ struct FreeUpView: View {
                                     .accessibilityIdentifier("freeUp.tile")
                             }
                         }
+                    } else {
+                        Text(kind.emptyNote)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .padding()
@@ -69,10 +81,25 @@ struct FreeUpView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Free up space")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("Sort", selection: $order) {
+                        ForEach(FreeUpOrder.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .accessibilityLabel("Sort")
+                .accessibilityIdentifier("freeUp.sort")
+            }
+        }
         .sensoryFeedback(.selection, trigger: tileTaps)
         .onAppear(perform: freeze)
         .onChange(of: cutoff) { freeze() }
         .onChange(of: customDate) { freeze() }
+        .onChange(of: kind) { freeze() }
+        .onChange(of: order) { freeze() }
         .onChange(of: preview == nil) { _, closed in
             if closed { dropProtected() }
         }
@@ -126,7 +153,7 @@ struct FreeUpView: View {
         } else {
             customDate
         }
-        let selection = model.freeUpSelection(before: date, kind: .all, order: .oldestFirst)
+        let selection = model.freeUpSelection(before: date, kind: kind, order: order)
         cutoffDate = date
         candidates = selection.candidates
         skippedProtected = selection.skippedProtected
@@ -190,5 +217,32 @@ struct FreeUpView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+private extension FreeUpKind {
+    var label: String {
+        switch self {
+        case .all: "All"
+        case .photos: "Photos"
+        case .videos: "Videos"
+        }
+    }
+
+    var emptyNote: String {
+        switch self {
+        case .all: "Nothing before this date."
+        case .photos: "No photos before this date."
+        case .videos: "No videos before this date."
+        }
+    }
+}
+
+private extension FreeUpOrder {
+    var label: String {
+        switch self {
+        case .oldestFirst: "Oldest first"
+        case .biggestFirst: "Biggest first"
+        }
     }
 }
