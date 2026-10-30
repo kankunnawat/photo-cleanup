@@ -175,13 +175,9 @@ final class AppModel {
         monthRows = Buckets.monthRows(snapshot.months, pending: pending, protected: protected)
         openCount = monthRows.reduce(0) { $0 + $1.open }
         screenshots = Buckets.screenshots(snapshot.screenshots, protected: protected, pending: pending)
-        recomputeLargeVideos()
+        largeVideos = Buckets.largeVideos(snapshot.videos, protected: protected, pending: pending)
         recomputePendingSummary()
         revision += 1
-    }
-
-    private func recomputeLargeVideos() {
-        largeVideos = Buckets.largeVideos(snapshot.videos, protected: protected, pending: pending, sizes: sizes)
     }
 
     private func recomputePendingSummary() {
@@ -195,7 +191,6 @@ final class AppModel {
 
     private func recomputeSizeTotals() {
         totalBytes = sizes.total(of: snapshot.assets.map(\.id))
-        recomputeLargeVideos()
         recomputePendingSummary()
     }
 

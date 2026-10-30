@@ -193,29 +193,20 @@ struct ScreenshotBucketTests {
 }
 
 struct LargeVideoBucketTests {
-    @Test func sortsUnprotectedVideosBiggestFirstWithUnknownSizesLast() {
+    @Test func listsUnprotectedUndecidedVideosInLibraryOrder() {
         let assets = [
-            Fixtures.video("small", Fixtures.date(2025, 1)),
-            Fixtures.video("unknown", Fixtures.date(2025, 1)),
-            Fixtures.video("big", Fixtures.date(2025, 1)),
-            Fixtures.video("kept", Fixtures.date(2025, 1)),
-            Fixtures.photo("huge-photo", Fixtures.date(2025, 1)),
+            Fixtures.video("first", Fixtures.date(2025, 3)),
+            Fixtures.video("queued", Fixtures.date(2025, 2)),
+            Fixtures.video("kept", Fixtures.date(2025, 2)),
+            Fixtures.photo("photo", Fixtures.date(2025, 1)),
+            Fixtures.video("second", Fixtures.date(2025, 1)),
         ]
-        let sizes = SizeCache(bytes: [
-            AssetID("small"): 10,
-            AssetID("big"): 500,
-            AssetID("kept"): 900,
-            AssetID("huge-photo"): 9_000,
-        ])
+        var pending = PendingDecisions()
+        pending.set(.trash, for: AssetID("queued"))
 
-        let videos = Buckets.largeVideos(
-            assets,
-            protected: ProtectedSet(ids: [AssetID("kept")]),
-            pending: PendingDecisions(),
-            sizes: sizes
-        )
+        let videos = Buckets.largeVideos(assets, protected: ProtectedSet(ids: [AssetID("kept")]), pending: pending)
 
-        #expect(videos.map(\.id) == [AssetID("big"), AssetID("small"), AssetID("unknown")])
+        #expect(videos.map(\.id) == [AssetID("first"), AssetID("second")])
     }
 }
 

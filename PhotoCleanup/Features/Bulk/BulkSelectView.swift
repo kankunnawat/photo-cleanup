@@ -9,11 +9,28 @@ struct BulkSelectView: View {
 
     @State private var toggled: Set<AssetID> = []
     @State private var preview: PreviewSession?
+    @State private var order: AssetOrder
+    // Fixed when the screen opens or the order changes. Decided or protected items drop out, and new ones go last.
+    @State private var frozen = FrozenOrder([])
+
+    init(mode: CleanupMode) {
+        self.mode = mode
+        _order = State(initialValue: Self.orders(for: mode)[0])
+    }
 
     private var startsSelected: Bool { mode == .screenshots }
 
+    /// The first is the default.
+    private static func orders(for mode: CleanupMode) -> [AssetOrder] {
+        mode == .screenshots ? [.newestFirst, .biggestFirst] : [.biggestFirst, .newestFirst]
+    }
+
+    private var modeItems: [AssetInfo] {
+        mode == .screenshots ? model.screenshots : model.largeVideos
+    }
+
     var body: some View {
-        let items = mode == .screenshots ? model.screenshots : model.largeVideos
+        let items = frozen.arrange(modeItems)
         let selected = items.map(\.id).filter(isSelected)
         Group {
             if items.isEmpty {
@@ -45,6 +62,13 @@ struct BulkSelectView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(mode.title)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                SortMenu(selection: $order, orders: Self.orders(for: mode), label: \.label, id: "bulk.sort")
+            }
+        }
+        .onAppear(perform: freeze)
+        .onChange(of: order) { freeze() }
         .sensoryFeedback(.selection, trigger: toggled)
         .safeAreaInset(edge: .bottom) {
             if !items.isEmpty {
@@ -72,7 +96,11 @@ struct BulkSelectView: View {
     private var hint: String {
         startsSelected
             ? "All selected. Tap a screenshot to keep it. Touch and hold to view it."
-            : "Biggest first. Tap a video to select it. Touch and hold to play it."
+            : "\(order.label). Tap a video to select it. Touch and hold to play it."
+    }
+
+    private func freeze() {
+        frozen = FrozenOrder(order.sorted(modeItems, sizes: model.sizes).map(\.id))
     }
 
     private func choice(for asset: AssetInfo) -> PreviewChoice {

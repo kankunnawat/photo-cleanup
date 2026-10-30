@@ -83,15 +83,7 @@ struct FreeUpView: View {
         .navigationTitle("Free up space")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Picker("Sort", selection: $order) {
-                        ForEach([AssetOrder.oldestFirst, .biggestFirst], id: \.self) { Text($0.label).tag($0) }
-                    }
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down")
-                }
-                .accessibilityLabel("Sort")
-                .accessibilityIdentifier("freeUp.sort")
+                SortMenu(selection: $order, orders: [.oldestFirst, .biggestFirst], label: \.label, id: "freeUp.sort")
             }
         }
         .sensoryFeedback(.selection, trigger: tileTaps)
@@ -221,29 +213,11 @@ struct FreeUpView: View {
 }
 
 private extension MediaFilter {
-    var label: String {
-        switch self {
-        case .all: "All"
-        case .photos: "Photos"
-        case .videos: "Videos"
-        }
-    }
-
     var emptyNote: String {
         switch self {
         case .all: "Nothing before this date."
         case .photos: "No photos before this date."
         case .videos: "No videos before this date."
-        }
-    }
-}
-
-private extension AssetOrder {
-    var label: String {
-        switch self {
-        case .oldestFirst: "Oldest first"
-        case .newestFirst: "Newest first"
-        case .biggestFirst: "Biggest first"
         }
     }
 }

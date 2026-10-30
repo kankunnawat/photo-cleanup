@@ -76,16 +76,9 @@ nonisolated enum Buckets {
             .sorted { ($0.creationDate ?? .distantPast) > ($1.creationDate ?? .distantPast) }
     }
 
-    /// Unprotected, undecided videos, biggest first; unknown sizes last.
-    static func largeVideos(
-        _ assets: [AssetInfo],
-        protected: ProtectedSet,
-        pending: PendingDecisions,
-        sizes: SizeCache
-    ) -> [AssetInfo] {
-        assets
-            .filter { $0.kind == .video && isOpen($0.id, protected: protected, pending: pending) }
-            .sorted { (sizes[$0.id] ?? -1) > (sizes[$1.id] ?? -1) }
+    /// Unprotected, undecided videos, in library order; the Large videos screen sorts them when it opens.
+    static func largeVideos(_ assets: [AssetInfo], protected: ProtectedSet, pending: PendingDecisions) -> [AssetInfo] {
+        assets.filter { $0.kind == .video && isOpen($0.id, protected: protected, pending: pending) }
     }
 
     private static func isOpen(_ id: AssetID, protected: ProtectedSet, pending: PendingDecisions) -> Bool {
