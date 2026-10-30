@@ -6,14 +6,13 @@ final class AlbumUITests: XCTestCase {
     private static let albumTitle = "UI Test"
 
     private let app = XCUIApplication()
-    private let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
 
     override func setUp() async throws {
         continueAfterFailure = false
     }
 
     func testAddToAnAlbumFromTheViewerThenTakeItOut() throws {
-        launchToHome()
+        app.launchToHome()
         app.buttons["mode.freeUp"].tap()
         let tile = app.descendants(matching: .any).matching(identifier: "freeUp.tile").firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: 10), "Free up showed no photos; seed the simulator")
@@ -72,7 +71,7 @@ final class AlbumUITests: XCTestCase {
     }
 
     func testDeckAlbumButtonOpensAndClosesThePicker() throws {
-        launchToHome()
+        app.launchToHome()
         app.buttons["mode.swipe"].tap()
         app.buttons["deck.shuffle"].tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "deck.card").firstMatch.waitForExistence(timeout: 10))
@@ -83,24 +82,5 @@ final class AlbumUITests: XCTestCase {
         app.buttons["albums.done"].tap()
         XCTAssertTrue(waitUntil { !sheet.exists }, "Done did not close the picker")
         XCTAssertTrue(app.buttons["deck.album"].isEnabled)
-    }
-
-    private func launchToHome() {
-        app.launchArguments = ["-uiTesting"]
-        app.launch()
-        let allow = app.buttons["permission.action"]
-        if allow.waitForExistence(timeout: 5) {
-            allow.tap()
-            let fullAccess = springboard.alerts.buttons["Allow Full Access"]
-            if fullAccess.waitForExistence(timeout: 10) {
-                fullAccess.tap()
-            }
-        }
-        XCTAssertTrue(app.staticTexts["home.libraryCount"].waitForExistence(timeout: 30), "Home never showed library totals")
-    }
-
-    private func waitUntil(timeout: TimeInterval = 15, _ condition: @escaping () -> Bool) -> Bool {
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in condition() }, object: nil)
-        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
 }

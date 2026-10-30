@@ -11,13 +11,10 @@ final class SwipeAndApplyUITests: XCTestCase {
     }
 
     func testSwipeOneEachWayThenApplyDeletesOneAndKeepsOne() throws {
-        app.launchArguments = ["-uiTesting"]
-        app.launch()
-        grantFullAccessIfAsked()
+        app.launchToHome()
 
         let libraryCount = app.staticTexts["home.libraryCount"]
         let keepCount = app.staticTexts["home.keepCount"]
-        XCTAssertTrue(libraryCount.waitForExistence(timeout: 30), "Home never showed library totals")
         let libraryBefore = try number(libraryCount)
         let keepBefore = try number(keepCount)
         XCTAssertGreaterThanOrEqual(libraryBefore, 2, "Seed the simulator with scripts/seed-simulator.sh")
@@ -53,12 +50,9 @@ final class SwipeAndApplyUITests: XCTestCase {
     }
 
     func testSwitchADeleteToKeepFromThePreview() throws {
-        app.launchArguments = ["-uiTesting"]
-        app.launch()
-        grantFullAccessIfAsked()
+        app.launchToHome()
 
         let libraryCount = app.staticTexts["home.libraryCount"]
-        XCTAssertTrue(libraryCount.waitForExistence(timeout: 30), "Home never showed library totals")
         let libraryBefore = try number(libraryCount)
 
         queueOneDeleteAndOpenApply()
@@ -88,12 +82,9 @@ final class SwipeAndApplyUITests: XCTestCase {
     }
 
     func testTapSwitchesADeleteAndTakeBackAllClearsTheSection() throws {
-        app.launchArguments = ["-uiTesting"]
-        app.launch()
-        grantFullAccessIfAsked()
+        app.launchToHome()
 
         let libraryCount = app.staticTexts["home.libraryCount"]
-        XCTAssertTrue(libraryCount.waitForExistence(timeout: 30), "Home never showed library totals")
         let libraryBefore = try number(libraryCount)
 
         queueOneDeleteAndOpenApply()
@@ -163,22 +154,7 @@ final class SwipeAndApplyUITests: XCTestCase {
         done.tap()
     }
 
-    private func grantFullAccessIfAsked() {
-        let allow = app.buttons["permission.action"]
-        guard allow.waitForExistence(timeout: 5) else { return }
-        allow.tap()
-        let fullAccess = springboard.alerts.buttons["Allow Full Access"]
-        if fullAccess.waitForExistence(timeout: 10) {
-            fullAccess.tap()
-        }
-    }
-
     private func number(_ element: XCUIElement) throws -> Int {
         try XCTUnwrap(try? Int(element.label, format: .number), "Not a number: \(element.label)")
-    }
-
-    private func waitUntil(timeout: TimeInterval = 15, _ condition: @escaping () -> Bool) -> Bool {
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in condition() }, object: nil)
-        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
 }
