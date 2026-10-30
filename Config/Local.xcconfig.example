@@ -1,0 +1,5 @@
+// Copy to Config/Local.xcconfig (git-ignored) for device builds.
+// DEVELOPMENT_TEAM: your team ID (see "Install option B" in the README).
+// BUNDLE_ID_PREFIX: a reverse-DNS prefix you own; the app becomes <prefix>.PhotoCleanup.
+DEVELOPMENT_TEAM = ABCDE12345
+BUNDLE_ID_PREFIX = com.yourname

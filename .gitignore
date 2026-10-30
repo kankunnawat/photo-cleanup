@@ -1,0 +1,6 @@
+.DS_Store
+PhotoCleanup.xcodeproj/
+Config/Local.xcconfig
+build/
+DerivedData/
+*.xcresult

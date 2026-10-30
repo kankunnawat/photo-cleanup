@@ -1,0 +1,4 @@
+// Device builds: copy Local.xcconfig.example to Local.xcconfig (git-ignored),
+// then set your DEVELOPMENT_TEAM and a BUNDLE_ID_PREFIX you own.
+BUNDLE_ID_PREFIX = com.example
+#include? "Local.xcconfig"
