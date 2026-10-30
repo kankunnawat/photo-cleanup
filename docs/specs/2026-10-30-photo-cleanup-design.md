@@ -86,7 +86,8 @@ An asset is in exactly one of these states:
 
 - Pick a month (newest first, with counts) or "Shuffle".
 - Above the months, pick a kind: All, Photos or Videos (All by default).
-  The month counts ("N of M") count only that kind, a month with nothing of that kind left shows as done, and Shuffle deals only that kind.
+  The list leaves out months that hold none of that kind, the month counts ("N of M") count only that kind, and Shuffle deals only that kind.
+  A month whose items of that kind all have a decision shows as done.
   Home's "to review" count always covers every kind.
 - The deck shows only undecided, unprotected assets of that month and kind.
   With Photos or Videos picked, the deck header says "Photos only" or "Videos only", and a finished deck says "Every video in this deck has a decision." for videos.

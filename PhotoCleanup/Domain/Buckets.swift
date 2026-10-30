@@ -39,6 +39,7 @@ nonisolated enum Buckets {
         return ids.filter { assetsByID[$0].map { filter.includes($0.kind) } ?? false }
     }
 
+    /// One row per month that holds any of the filter's kinds, so under All every month has a row.
     static func monthRows(
         _ months: [MonthGroup],
         filter: MediaFilter,
@@ -46,8 +47,9 @@ nonisolated enum Buckets {
         pending: PendingDecisions,
         protected: ProtectedSet
     ) -> [MonthRow] {
-        months.map { group in
+        months.compactMap { group in
             let ids = matching(group.assetIDs, filter, assetsByID: assetsByID)
+            guard !ids.isEmpty else { return nil }
             return MonthRow(group: group, open: ids.count { isOpen($0, protected: protected, pending: pending) }, total: ids.count)
         }
     }

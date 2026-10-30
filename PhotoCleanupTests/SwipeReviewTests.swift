@@ -129,13 +129,17 @@ final class SwipeReviewModelTests {
 
         model.swipeFilter = .videos
 
-        #expect(model.monthRows.map(\.open) == [2, 0])
-        #expect(model.monthRows.map(\.total) == [2, 0])
+        #expect(model.monthRows.map(\.open) == [2])
+        #expect(model.monthRows.map(\.total) == [2])
         #expect(model.openCount == 4)
 
         model.decide(.trash, for: AssetID("feb-video"))
 
-        #expect(model.monthRows.map(\.open) == [1, 0])
+        #expect(model.monthRows.map(\.open) == [1])
         #expect(model.openCount == 3)
+
+        model.swipeFilter = .all
+
+        #expect(model.monthRows.map(\.total) == [3, 1])
     }
 }

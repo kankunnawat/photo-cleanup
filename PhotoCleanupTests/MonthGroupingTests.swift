@@ -56,7 +56,7 @@ struct MonthGroupingTests {
         #expect(rows.map(\.id) == groups.map(\.id))
     }
 
-    @Test func monthRowsUnderAFilterCountOnlyThatKind() {
+    @Test func monthRowsUnderAFilterCountOnlyThatKindAndSkipMonthsWithoutIt() {
         let assets = [
             Fixtures.photo("photo", Fixtures.date(2025, 2)),
             Fixtures.video("open-video", Fixtures.date(2025, 2)),
@@ -68,16 +68,21 @@ struct MonthGroupingTests {
         let byID = Dictionary(uniqueKeysWithValues: assets.map { ($0.id, $0) })
         var pending = PendingDecisions()
         pending.set(.trash, for: AssetID("queued-video"))
+        pending.set(.keep, for: AssetID("only-photo"))
 
         let rows = { (filter: MediaFilter) in
             Buckets.monthRows(groups, filter: filter, assetsByID: byID, pending: pending, protected: ProtectedSet())
         }
 
-        #expect(rows(.all).map(\.open) == [3, 1])
+        #expect(rows(.all).map(\.id) == groups.map(\.id))
+        #expect(rows(.all).map(\.open) == [3, 0])
         #expect(rows(.all).map(\.total) == [4, 1])
-        #expect(rows(.videos).map(\.open) == [1, 0])
-        #expect(rows(.videos).map(\.total) == [2, 0])
-        #expect(rows(.photos).map(\.open) == [1, 1])
+        #expect(rows(.videos).map(\.id) == [groups[0].id])
+        #expect(rows(.videos).map(\.open) == [1])
+        #expect(rows(.videos).map(\.total) == [2])
+        // A month whose photos all have a decision keeps its row.
+        #expect(rows(.photos).map(\.id) == groups.map(\.id))
+        #expect(rows(.photos).map(\.open) == [1, 0])
         #expect(rows(.photos).map(\.total) == [1, 1])
     }
 }
