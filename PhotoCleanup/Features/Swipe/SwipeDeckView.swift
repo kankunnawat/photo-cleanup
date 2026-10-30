@@ -55,6 +55,7 @@ struct SwipeDeckView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                // Sorts on the menu pick, not when deal() sets `order`; the closure form avoids a swift-frontend 6.3.1 crash.
                 SortMenu(selection: Binding(get: { order }, set: { sort($0) }), orders: orders, label: { $0?.label ?? "Shuffled" }, id: "deck.sort")
             }
             ToolbarItem(placement: .topBarTrailing) {
