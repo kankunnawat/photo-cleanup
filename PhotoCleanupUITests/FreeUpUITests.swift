@@ -36,8 +36,11 @@ final class FreeUpUITests: XCTestCase {
         tiles.firstMatch.tap()
         XCTAssertTrue(keptTile.waitForExistence(timeout: 10), "Tap did not keep the tile")
         let countWithKeep = count.label
+        let oldestFirstFrame = keptTile.frame
 
+        // The seeded photos differ in size, so the oldest one is not also the biggest.
         sort("Biggest first")
+        XCTAssertTrue(waitUntil { keptTile.frame != oldestFirstFrame }, "Biggest first did not reorder the grid")
         XCTAssertEqual(count.label, countWithKeep, "Changing the sort lost the keep")
 
         // Biggest first can put the kept tile under the Delete bar; oldest first puts it back at the top.
