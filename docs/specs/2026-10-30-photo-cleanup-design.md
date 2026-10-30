@@ -87,6 +87,7 @@ An asset is in exactly one of these states:
 - Pick a month (newest first, with counts) or "Shuffle".
 - Above the months, pick a kind: All, Photos or Videos (All by default).
   The list leaves out months that hold none of that kind, the month counts ("N of M") count only that kind, and Shuffle deals only that kind.
+  When the library holds none of that kind, the list says so ("No videos in your library.") and Shuffle is off.
   A month whose items of that kind all have a decision shows as done.
   Home's "to review" count always covers every kind.
 - The deck shows only undecided, unprotected assets of that month and kind.

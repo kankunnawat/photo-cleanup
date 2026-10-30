@@ -22,6 +22,7 @@ struct MonthPickerView: View {
                         .font(.headline)
                 }
                 .accessibilityIdentifier("deck.shuffle")
+                .disabled(model.monthRows.isEmpty)
             }
             Section("Months") {
                 ForEach(model.monthRows) { row in
@@ -42,6 +43,10 @@ struct MonthPickerView: View {
                     }
                     .disabled(row.open == 0)
                     .accessibilityIdentifier("months.row")
+                }
+                if model.monthRows.isEmpty, model.swipeFilter != .all {
+                    Text(model.swipeFilter == .videos ? "No videos in your library." : "No photos in your library.")
+                        .foregroundStyle(.secondary)
                 }
             }
         }
