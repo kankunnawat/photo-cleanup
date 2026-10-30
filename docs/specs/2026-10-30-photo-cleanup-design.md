@@ -92,7 +92,7 @@ An asset is in exactly one of these states:
 - Pick a kind under the cutoff: All, Photos or Videos (All by default).
   The filter decides what gets deleted: with Videos picked, Delete queues only the shown videos and leaves every photo alone.
   Assets that are neither photo nor video show only under All.
-- Candidates: every asset of the picked kind before the cutoff that is not protected and not pending keep.
+- Candidates: every asset of the picked kind before the cutoff that is not protected; pending keeps show as kept tiles.
 - Shows candidate count, total size ("up to"), and how many assets of the picked kind were skipped as protected.
 - Sort from the toolbar: oldest first (the default) or biggest first.
   Biggest first puts unknown sizes last, and equal sizes oldest first.
