@@ -89,11 +89,20 @@ An asset is in exactly one of these states:
 ### Free up space
 
 - Pick a cutoff: older than 1, 3, 6 or 12 months, or a custom date.
-- Candidates: every asset before the cutoff that is not protected and not pending keep.
-- Shows candidate count, total size ("up to"), and how many assets were skipped as protected.
+- Pick a kind under the cutoff: All, Photos or Videos (All by default).
+  The filter decides what gets deleted: with Videos picked, Delete queues only the shown videos and leaves every photo alone.
+  Assets that are neither photo nor video show only under All.
+- Candidates: every asset of the picked kind before the cutoff that is not protected and not pending keep.
+- Shows candidate count, total size ("up to"), and how many assets of the picked kind were skipped as protected.
+- Sort from the toolbar: oldest first (the default) or biggest first.
+  Biggest first puts unknown sizes last, and equal sizes oldest first.
+  The order is fixed when the screen opens or when the cutoff, kind or sort changes; sizes measured later never move a tile.
 - A grid of candidates that never reflows while you tap; tapping a tile marks it keep in place (saved as a pending keep at once), and tapping again clears it.
+  Kept tiles stay kept when the cutoff, kind or sort changes.
   A tile whose photo your album add in the viewer protected leaves when the viewer closes.
-- "Delete N items" adds the candidates to pending trash and opens the apply screen.
+- An empty grid names what is missing, for example "No videos before this date."
+- Kind and sort reset to All and oldest first on every visit, as the cutoff does.
+- "Delete N items" adds the shown candidates to pending trash and opens the apply screen.
 - Copy states that the app cannot see the user's backup, so the user confirms it is complete.
 
 ### Screenshots and large videos
