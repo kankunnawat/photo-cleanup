@@ -39,6 +39,8 @@ final class FreeUpUITests: XCTestCase {
         let oldestFirstFrame = keptTile.frame
 
         // The seeded photos differ in size, so the oldest one is not also the biggest.
+        // A UI-test launch measures sizes again; sorting before that lands would keep the oldest-first order.
+        XCTAssertTrue(app.staticTexts["up to"].waitForExistence(timeout: 30), "Sizes were still being measured")
         sort("Biggest first")
         XCTAssertTrue(waitUntil { keptTile.frame != oldestFirstFrame }, "Biggest first did not reorder the grid")
         XCTAssertEqual(count.label, countWithKeep, "Changing the sort lost the keep")
