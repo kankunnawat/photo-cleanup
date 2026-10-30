@@ -7,8 +7,8 @@ struct FreeUpCandidatesTests {
 
     private func select(
         _ assets: [AssetInfo],
-        kind: FreeUpKind = .all,
-        order: FreeUpOrder = .oldestFirst,
+        kind: MediaFilter = .all,
+        order: AssetOrder = .oldestFirst,
         protected: ProtectedSet = ProtectedSet(),
         pending: PendingDecisions = PendingDecisions(),
         sizes: SizeCache = SizeCache()

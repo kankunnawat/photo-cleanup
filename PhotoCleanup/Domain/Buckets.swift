@@ -1,24 +1,7 @@
 import Foundation
 
-/// Which media kinds Free up lists, and so the only kinds its Delete can queue.
-nonisolated enum FreeUpKind: CaseIterable, Hashable, Sendable {
-    case all, photos, videos
-
-    func includes(_ kind: MediaKind) -> Bool {
-        switch self {
-        case .all: true
-        case .photos: kind == .photo
-        case .videos: kind == .video
-        }
-    }
-}
-
-nonisolated enum FreeUpOrder: CaseIterable, Hashable, Sendable {
-    case oldestFirst, biggestFirst
-}
-
 nonisolated struct FreeUpSelection: Sendable {
-    /// In the requested `FreeUpOrder`.
+    /// In the requested `AssetOrder`.
     let candidates: [AssetInfo]
     /// Candidates already pending keep; Free up shows them as kept tiles.
     let kept: Set<AssetID>
@@ -55,13 +38,12 @@ nonisolated enum Buckets {
     }
 
     /// Unprotected assets of the chosen kind created before the cutoff; pending keeps are listed in `kept`.
-    /// Undated assets are never candidates, because their age is unknown.
-    /// Biggest first puts unknown sizes last; equal sizes fall back to oldest first.
+    /// The kind decides what Free up's Delete can queue. Undated assets are never candidates, because their age is unknown.
     static func freeUpCandidates(
         _ assets: [AssetInfo],
         before cutoff: Date,
-        kind: FreeUpKind,
-        order: FreeUpOrder,
+        kind: MediaFilter,
+        order: AssetOrder,
         protected: ProtectedSet,
         pending: PendingDecisions,
         sizes: SizeCache
@@ -80,18 +62,7 @@ nonisolated enum Buckets {
                 kept.insert(asset.id)
             }
         }
-        let isOlder = { (a: AssetInfo, b: AssetInfo) in (a.creationDate ?? .distantPast) < (b.creationDate ?? .distantPast) }
-        switch order {
-        case .oldestFirst:
-            candidates.sort(by: isOlder)
-        case .biggestFirst:
-            candidates.sort { a, b in
-                let sizeA = sizes[a.id] ?? -1
-                let sizeB = sizes[b.id] ?? -1
-                return sizeA == sizeB ? isOlder(a, b) : sizeA > sizeB
-            }
-        }
-        return FreeUpSelection(candidates: candidates, kept: kept, skippedProtected: skipped)
+        return FreeUpSelection(candidates: order.sorted(candidates, sizes: sizes), kept: kept, skippedProtected: skipped)
     }
 
     /// Unprotected, undecided screenshots, newest first.

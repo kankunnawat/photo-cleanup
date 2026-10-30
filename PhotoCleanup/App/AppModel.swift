@@ -263,7 +263,7 @@ final class AppModel {
         pending.set(.trash, for: Buckets.trashable(ids, protected: protected))
     }
 
-    func freeUpSelection(before cutoff: Date, kind: FreeUpKind, order: FreeUpOrder) -> FreeUpSelection {
+    func freeUpSelection(before cutoff: Date, kind: MediaFilter, order: AssetOrder) -> FreeUpSelection {
         Buckets.freeUpCandidates(assets, before: cutoff, kind: kind, order: order, protected: protected, pending: pending, sizes: sizes)
     }
 

@@ -25,8 +25,8 @@ struct FreeUpView: View {
 
     @State private var cutoff: Cutoff = .three
     @State private var customDate = Calendar.current.date(byAdding: .year, value: -1, to: .now) ?? .now
-    @State private var kind: FreeUpKind = .all
-    @State private var order: FreeUpOrder = .oldestFirst
+    @State private var kind: MediaFilter = .all
+    @State private var order: AssetOrder = .oldestFirst
     // Frozen when the screen opens or the cutoff, kind or order changes, so tiles stay put while the user taps
     // and while sizes are still being measured.
     // Closing the viewer only drops tiles that became protected.
@@ -46,7 +46,7 @@ struct FreeUpView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     cutoffPicker
                     Picker("Show", selection: $kind) {
-                        ForEach(FreeUpKind.allCases, id: \.self) { Text($0.label).tag($0) }
+                        ForEach(MediaFilter.allCases, id: \.self) { Text($0.label).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .accessibilityIdentifier("freeUp.kind")
@@ -85,7 +85,7 @@ struct FreeUpView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Picker("Sort", selection: $order) {
-                        ForEach(FreeUpOrder.allCases, id: \.self) { Text($0.label).tag($0) }
+                        ForEach([AssetOrder.oldestFirst, .biggestFirst], id: \.self) { Text($0.label).tag($0) }
                     }
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
@@ -220,7 +220,7 @@ struct FreeUpView: View {
     }
 }
 
-private extension FreeUpKind {
+private extension MediaFilter {
     var label: String {
         switch self {
         case .all: "All"
@@ -238,10 +238,11 @@ private extension FreeUpKind {
     }
 }
 
-private extension FreeUpOrder {
+private extension AssetOrder {
     var label: String {
         switch self {
         case .oldestFirst: "Oldest first"
+        case .newestFirst: "Newest first"
         case .biggestFirst: "Biggest first"
         }
     }
