@@ -1,7 +1,8 @@
 import XCTest
 
-/// The deck tests need a month whose top card is smaller than a card behind it, such as a photo above a video.
-/// SwipeAndApplyUITests uses up two random items per run, so after many runs add media again. Leaves no pending decision behind.
+/// Needs media from `scripts/seed-simulator.sh <udid>`: each seeded month has a small photo on top of a bigger one.
+/// SwipeAndApplyUITests uses up two random items per run, so the deck tests look for a month that still has such a pair.
+/// Leaves no pending decision behind.
 @MainActor
 final class SwipeReviewUITests: XCTestCase {
     private let app = XCUIApplication()
@@ -87,7 +88,7 @@ final class SwipeReviewUITests: XCTestCase {
             app.navigationBars.buttons["BackButton"].tap()
             XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10), "Back did not return to the months")
         }
-        return try XCTUnwrap(nil, "No month has a card bigger than its top one; add a video older than a photo of the same month and run again")
+        return try XCTUnwrap(nil, "No month has a card bigger than its top one; run scripts/seed-simulator.sh <udid> again")
     }
 
     private func sort(_ order: String) {
