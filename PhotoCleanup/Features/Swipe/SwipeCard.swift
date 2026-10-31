@@ -6,9 +6,13 @@ struct SwipeCard: View {
     let isTop: Bool
     let onDecide: (Decision) -> Void
     let onTap: () -> Void
+    /// Nil when the card has no date, because the grid has no day to center on.
+    let onZoomOut: (() -> Void)?
 
     @State private var offset: CGSize = .zero
     @State private var isFlyingOff = false
+    @State private var pinchScale: CGFloat = 1
+    @State private var isPinching = false
 
     private static let threshold: CGFloat = 110
 
@@ -25,11 +29,13 @@ struct SwipeCard: View {
                 .shadow(color: .black.opacity(isTop ? 0.2 : 0.08), radius: 12, y: 6)
         }
         .aspectRatio(3 / 4, contentMode: .fit)
+        .scaleEffect(pinchScale)
         .offset(offset)
         .rotationEffect(.degrees(Double(offset.width / 18)), anchor: .bottom)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
         .gesture(isTop ? drag : nil)
+        .simultaneousGesture(isTop && onZoomOut != nil ? pinch : nil)
         .allowsHitTesting(isTop && !isFlyingOff)
         .sensoryFeedback(.selection, trigger: pastThreshold)
         .accessibilityElement(children: .combine)
@@ -40,6 +46,9 @@ struct SwipeCard: View {
                 Button("Keep") { onDecide(.keep) }
                 Button("Delete") { onDecide(.trash) }
                 Button("Preview", action: onTap)
+                if let onZoomOut {
+                    Button("Around this time", action: onZoomOut)
+                }
             }
         }
     }
@@ -50,8 +59,15 @@ struct SwipeCard: View {
 
     private var drag: some Gesture {
         DragGesture()
-            .onChanged { offset = $0.translation }
+            .onChanged { value in
+                if !isPinching { offset = value.translation }
+            }
             .onEnded { value in
+                // The pinch's fingers also drive this drag; a pinch never decides the card.
+                guard !isPinching else {
+                    withAnimation(.spring(duration: 0.35, bounce: 0.4)) { offset = .zero }
+                    return
+                }
                 let width = value.translation.width
                 let predicted = value.predictedEndTranslation.width
                 if width > Self.threshold || predicted > Self.threshold * 2.5 {
@@ -61,6 +77,22 @@ struct SwipeCard: View {
                 } else {
                     withAnimation(.spring(duration: 0.35, bounce: 0.4)) { offset = .zero }
                 }
+            }
+    }
+
+    /// Pinching the card closed, as in Photos, zooms out to the days around it.
+    private var pinch: some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                isPinching = true
+                offset = .zero
+                pinchScale = min(1, max(0.6, value.magnification))
+            }
+            .onEnded { value in
+                withAnimation(.spring(duration: 0.3)) { pinchScale = 1 }
+                if value.magnification < 0.8 { onZoomOut?() }
+                // The drag of the same fingers can end after this; it must still see the pinch.
+                Task { isPinching = false }
             }
     }
 

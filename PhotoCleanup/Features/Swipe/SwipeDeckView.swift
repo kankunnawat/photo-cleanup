@@ -33,7 +33,8 @@ struct SwipeDeckView: View {
                             bytes: model.sizes[id],
                             isTop: depth == 0,
                             onDecide: { decide($0, for: id, animated: false) },
-                            onTap: { preview = PreviewSession([asset], showing: id) }
+                            onTap: { preview = PreviewSession([asset], showing: id) },
+                            onZoomOut: asset.creationDate == nil ? nil : { openAround(id) }
                         )
                         .scaleEffect(1 - CGFloat(depth) * 0.04)
                         .offset(y: CGFloat(depth) * 14)
@@ -76,7 +77,8 @@ struct SwipeDeckView: View {
         // The card under the album picker stays until the picker closes.
         .onChange(of: model.revision) { if albumTarget == nil { refilter() } }
         .onChange(of: open.isEmpty) { _, isEmpty in
-            if isEmpty, keptTick + trashedTick > 0 { router.openApply() }
+            // The grid can empty the deck while it is on top; Apply must not open over the grid.
+            if isEmpty, keptTick + trashedTick > 0, router.path.last == .deck(source) { router.openApply() }
         }
     }
 
@@ -144,6 +146,10 @@ struct SwipeDeckView: View {
         }
     }
 
+    private func openAround(_ id: AssetID) {
+        if router.path.last == .deck(source) { router.path.append(.around(id)) }
+    }
+
     private func choice(for asset: AssetInfo) -> PreviewChoice {
         let decideAndClose = { (decision: Decision) in
             preview = nil
@@ -175,7 +181,8 @@ struct SwipeDeckView: View {
     }
 
     private func controls(hasCard: Bool) -> some View {
-        HStack(spacing: 28) {
+        // Five buttons, 272 pt, with four 16 pt gaps fit the 343 pt a 375 pt wide screen leaves inside the padding.
+        HStack(spacing: 16) {
             roundButton("xmark", tint: .red, size: 64, label: "Delete") {
                 if let id = open.first { decide(.trash, for: id, animated: true) }
             }
@@ -189,6 +196,10 @@ struct SwipeDeckView: View {
                 }
             }
             .disabled(!history.canUndo(in: model.pending))
+            roundButton("square.grid.2x2", tint: .accentColor, size: 48, label: "Around this time", id: "around") {
+                if let id = open.first { openAround(id) }
+            }
+            .disabled(open.first.flatMap { model.assetsByID[$0]?.creationDate } == nil)
             roundButton("rectangle.stack.badge.plus", tint: .accentColor, size: 48, label: "Album") {
                 albumTarget = open.first
             }
@@ -201,7 +212,7 @@ struct SwipeDeckView: View {
         .padding(.bottom, 8)
     }
 
-    private func roundButton(_ symbol: String, tint: Color, size: CGFloat, label: String, action: @escaping () -> Void) -> some View {
+    private func roundButton(_ symbol: String, tint: Color, size: CGFloat, label: String, id: String? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: size * 0.4, weight: .bold))
@@ -212,7 +223,7 @@ struct SwipeDeckView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-        .accessibilityIdentifier("deck.\(label.lowercased())")
+        .accessibilityIdentifier("deck.\(id ?? label.lowercased())")
     }
 
     private var finished: some View {
