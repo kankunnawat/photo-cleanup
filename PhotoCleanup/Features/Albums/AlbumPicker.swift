@@ -147,9 +147,9 @@ struct AlbumPicker: View {
     private func toggle(_ albumID: String, isMember: Bool) {
         perform(.album(albumID)) {
             if isMember {
-                try await model.remove(assetID, fromAlbum: albumID)
+                try await model.remove([assetID], fromAlbum: albumID)
             } else {
-                try await model.add(assetID, toAlbum: albumID)
+                try await model.add([assetID], toAlbum: albumID)
             }
         }
     }
@@ -158,7 +158,7 @@ struct AlbumPicker: View {
         let title = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         perform(.newAlbum) {
-            try await model.createAlbum(titled: title, adding: assetID)
+            try await model.createAlbum(titled: title, adding: [assetID])
             query = ""
         }
     }

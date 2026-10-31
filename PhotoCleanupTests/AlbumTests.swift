@@ -5,6 +5,7 @@ import Testing
 final class AlbumTests {
     let a = AssetID("a")
     let b = AssetID("b")
+    let c = AssetID("c")
     let suite = "AlbumTests-\(UUID().uuidString)"
     let directory: URL
     let defaults: UserDefaults
@@ -25,6 +26,7 @@ final class AlbumTests {
         let library = FakePhotoLibrary(assets: [
             Fixtures.photo("a", Fixtures.date(2025, 1)),
             Fixtures.photo("b", Fixtures.date(2025, 2)),
+            Fixtures.photo("c", Fixtures.date(2025, 3)),
         ])
         await library.configure { $0.albums = albums }
         persistence.saveDisabledAlbumIDs(disabled)
@@ -44,9 +46,9 @@ final class AlbumTests {
     @Test func createMakesANewProtectedAlbumHoldingThePhoto() async throws {
         let (model, library) = await makeModel(albums: [album("zoo")])
 
-        try await model.createAlbum(titled: "Pets", adding: a)
+        try await model.createAlbum(titled: "Pets", adding: [a])
 
-        #expect(await library.calls == [.createAlbum("Pets"), .add(a, toAlbum: "created-1")])
+        #expect(await library.calls == [.createAlbum("Pets"), .add([a], toAlbum: "created-1")])
         #expect(model.sources.albums.map(\.title) == ["Pets", "Zoo"])
         #expect(members(of: "created-1", in: model) == [a])
         #expect(model.protected.contains(a))
@@ -56,11 +58,11 @@ final class AlbumTests {
     @Test func addThenRemoveUpdatesMembershipAtOnce() async throws {
         let (model, library) = await makeModel(albums: [album("trip")])
 
-        try await model.add(a, toAlbum: "trip")
+        try await model.add([a], toAlbum: "trip")
         #expect(members(of: "trip", in: model) == [a])
         #expect(model.protected.contains(a))
 
-        try await model.remove(a, fromAlbum: "trip")
+        try await model.remove([a], fromAlbum: "trip")
         #expect(members(of: "trip", in: model) == [])
         #expect(!model.protected.contains(a))
         #expect(await library.albums.first?.assetIDs == [])
@@ -71,19 +73,58 @@ final class AlbumTests {
         model.decide(.trash, for: a)
         model.decide(.keep, for: b)
 
-        try await model.add(a, toAlbum: "trip")
-        try await model.add(b, toAlbum: "trip")
+        try await model.add([a], toAlbum: "trip")
+        try await model.add([b], toAlbum: "trip")
 
         #expect(model.pending.decision(for: a) == nil)
         #expect(model.pending.decision(for: b) == .keep)
         #expect(model.pendingSummary.trashCount == 0)
     }
 
+    @Test func aBatchAddIsOneLibraryCallAndOnePendingWrite() async throws {
+        let (model, library) = await makeModel(albums: [album("trip", [b])])
+        model.decide(.trash, for: [a, c])
+        model.decide(.keep, for: b)
+        let revisionBefore = model.revision
+
+        try await model.add([a, b, c], toAlbum: "trip")
+
+        #expect(await library.calls == [.add([a, b, c], toAlbum: "trip")])
+        #expect(members(of: "trip", in: model) == [a, b, c])
+        #expect(model.pending.decision(for: a) == nil)
+        #expect(model.pending.decision(for: c) == nil)
+        #expect(model.pending.decision(for: b) == .keep)
+        // One bump for the album change and one for clearing both deletes.
+        #expect(model.revision == revisionBefore + 2)
+        #expect(model.recentAlbums.map(\.id) == ["trip"])
+    }
+
+    @Test func aBatchRemoveTakesEveryItemOutInOneCall() async throws {
+        let (model, library) = await makeModel(albums: [album("trip", [a, b, c])])
+
+        try await model.remove([a, c], fromAlbum: "trip")
+
+        #expect(await library.calls == [.remove([a, c], fromAlbum: "trip")])
+        #expect(members(of: "trip", in: model) == [b])
+        #expect(!model.protected.contains(a))
+        #expect(!model.protected.contains(c))
+        #expect(model.pending.isEmpty)
+    }
+
+    @Test func createAddsEveryItemToTheNewAlbum() async throws {
+        let (model, library) = await makeModel()
+
+        try await model.createAlbum(titled: "Gym", adding: [a, b])
+
+        #expect(await library.calls == [.createAlbum("Gym"), .add([a, b], toAlbum: "created-1")])
+        #expect(members(of: "created-1", in: model) == [a, b])
+    }
+
     @Test func addingToASwitchedOffAlbumClearsNothing() async throws {
         let (model, _) = await makeModel(albums: [album("trip")], disabled: ["trip"])
         model.decide(.trash, for: a)
 
-        try await model.add(a, toAlbum: "trip")
+        try await model.add([a], toAlbum: "trip")
 
         #expect(members(of: "trip", in: model) == [a])
         #expect(model.pending.decision(for: a) == .trash)
@@ -93,10 +134,10 @@ final class AlbumTests {
     @Test func removingNeverQueuesADelete() async throws {
         let (model, library) = await makeModel(albums: [album("trip", [a])])
 
-        try await model.remove(a, fromAlbum: "trip")
+        try await model.remove([a], fromAlbum: "trip")
 
         #expect(model.pending.decision(for: a) == nil)
-        #expect(await library.calls == [.remove(a, fromAlbum: "trip")])
+        #expect(await library.calls == [.remove([a], fromAlbum: "trip")])
     }
 
     @Test func aFailedWriteLeavesEverythingAsItWas() async throws {
@@ -105,7 +146,7 @@ final class AlbumTests {
         model.decide(.trash, for: a)
 
         await #expect(throws: PhotoLibraryError.albumUnavailable) {
-            try await model.add(a, toAlbum: "trip")
+            try await model.add([a], toAlbum: "trip")
         }
 
         #expect(members(of: "trip", in: model) == [])
@@ -120,7 +161,7 @@ final class AlbumTests {
         let refresh = Task { await model.refresh() }
         await library.waitUntilProtectionSourcesHeld()
 
-        try await model.add(a, toAlbum: "trip")
+        try await model.add([a], toAlbum: "trip")
         await library.releaseProtectionSources()
         await refresh.value
 
@@ -134,7 +175,7 @@ final class AlbumTests {
         await library.configure { $0.albums = [AlbumInfo(id: "created-1", title: "Trip", assetIDs: [])] }
         await model.refresh()
 
-        try await model.createAlbum(titled: "Trip", adding: a)
+        try await model.createAlbum(titled: "Trip", adding: [a])
 
         #expect(model.sources.albums.filter { $0.id == "created-1" }.count == 1)
         #expect(members(of: "created-1", in: model) == [a])
@@ -144,9 +185,9 @@ final class AlbumTests {
         let (model, _) = await makeModel(albums: ["w", "x", "y", "z"].map { album($0) })
 
         for albumID in ["x", "y", "z", "w", "y"] {
-            try await model.add(a, toAlbum: albumID)
+            try await model.add([a], toAlbum: albumID)
         }
-        try await model.remove(a, fromAlbum: "x")
+        try await model.remove([a], fromAlbum: "x")
 
         #expect(model.recentAlbums.map(\.id) == ["y", "w", "z"])
         let (reopened, _) = await makeModel(albums: ["w", "x", "y", "z"].map { album($0) })
@@ -155,8 +196,8 @@ final class AlbumTests {
 
     @Test func recentsDropAlbumsThatNoLongerExist() async throws {
         let (model, library) = await makeModel(albums: ["x", "y"].map { album($0) })
-        try await model.add(a, toAlbum: "x")
-        try await model.add(a, toAlbum: "y")
+        try await model.add([a], toAlbum: "x")
+        try await model.add([a], toAlbum: "y")
 
         await library.configure { $0.albums.removeAll { $0.id == "y" } }
         await model.refresh()

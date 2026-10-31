@@ -7,8 +7,8 @@ actor FakePhotoLibrary: PhotoLibrary {
         case addToKeepAlbum([AssetID])
         case delete([AssetID])
         case createAlbum(String)
-        case add(AssetID, toAlbum: String)
-        case remove(AssetID, fromAlbum: String)
+        case add([AssetID], toAlbum: String)
+        case remove([AssetID], fromAlbum: String)
     }
 
     enum DeleteBehavior {
@@ -95,14 +95,14 @@ actor FakePhotoLibrary: PhotoLibrary {
         return album
     }
 
-    func add(_ id: AssetID, toAlbum albumID: String) async throws {
-        calls.append(.add(id, toAlbum: albumID))
-        try changeAlbum(albumID) { $0.insert(id) }
+    func add(_ ids: [AssetID], toAlbum albumID: String) async throws {
+        calls.append(.add(ids, toAlbum: albumID))
+        try changeAlbum(albumID) { $0.formUnion(ids) }
     }
 
-    func remove(_ id: AssetID, fromAlbum albumID: String) async throws {
-        calls.append(.remove(id, fromAlbum: albumID))
-        try changeAlbum(albumID) { $0.remove(id) }
+    func remove(_ ids: [AssetID], fromAlbum albumID: String) async throws {
+        calls.append(.remove(ids, fromAlbum: albumID))
+        try changeAlbum(albumID) { $0.subtract(ids) }
     }
 
     private func changeAlbum(_ albumID: String, _ change: (inout Set<AssetID>) -> Void) throws {

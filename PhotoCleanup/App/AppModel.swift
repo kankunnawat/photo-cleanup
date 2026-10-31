@@ -321,29 +321,30 @@ final class AppModel {
     }
 
     /// Writes to Photos, then updates the albums here at once instead of waiting for the change observer.
-    func add(_ id: AssetID, toAlbum albumID: String) async throws {
-        try await library.add(id, toAlbum: albumID)
-        changeMembers(ofAlbum: albumID) { $0.insert(id) }
+    func add(_ ids: [AssetID], toAlbum albumID: String) async throws {
+        try await library.add(ids, toAlbum: albumID)
+        changeMembers(ofAlbum: albumID) { $0.formUnion(ids) }
         recentAlbumIDs = Array(([albumID] + recentAlbumIDs.filter { $0 != albumID }).prefix(Self.recentAlbumLimit))
         // Apply would skip a now-protected delete; clearing it keeps Apply's counts honest.
-        if !disabledAlbumIDs.contains(albumID), pending.decision(for: id) == .trash {
-            pending.clear(id)
+        if !disabledAlbumIDs.contains(albumID) {
+            let deletes = ids.filter { pending.decision(for: $0) == .trash }
+            if !deletes.isEmpty { clearDecisions(for: deletes) }
         }
     }
 
-    /// Never queues a delete: the photo just becomes reviewable again if nothing else protects it.
-    func remove(_ id: AssetID, fromAlbum albumID: String) async throws {
-        try await library.remove(id, fromAlbum: albumID)
-        changeMembers(ofAlbum: albumID) { $0.remove(id) }
+    /// Never queues a delete: the photos just become reviewable again if nothing else protects them.
+    func remove(_ ids: [AssetID], fromAlbum albumID: String) async throws {
+        try await library.remove(ids, fromAlbum: albumID)
+        changeMembers(ofAlbum: albumID) { $0.subtract(ids) }
     }
 
-    func createAlbum(titled title: String, adding id: AssetID) async throws {
+    func createAlbum(titled title: String, adding ids: [AssetID]) async throws {
         let album = try await library.createAlbum(title: title)
         // A refresh that landed during the create may already list it.
         changeAlbums { albums in
             if !albums.contains(where: { $0.id == album.id }) { albums.append(album) }
         }
-        try await add(id, toAlbum: album.id)
+        try await add(ids, toAlbum: album.id)
     }
 
     private func changeMembers(ofAlbum albumID: String, _ change: (inout Set<AssetID>) -> Void) {

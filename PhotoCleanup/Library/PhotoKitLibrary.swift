@@ -121,28 +121,32 @@ nonisolated final class PhotoKitLibrary: PhotoLibrary {
         return AlbumInfo(id: album.localIdentifier, title: album.localizedTitle ?? title, assetIDs: Self.memberIDs(of: album))
     }
 
-    @concurrent func add(_ id: AssetID, toAlbum albumID: String) async throws {
-        try await setMembership(of: id, inAlbum: albumID, to: true)
+    @concurrent func add(_ ids: [AssetID], toAlbum albumID: String) async throws {
+        try await setMembership(of: ids, inAlbum: albumID, to: true)
     }
 
-    @concurrent func remove(_ id: AssetID, fromAlbum albumID: String) async throws {
-        try await setMembership(of: id, inAlbum: albumID, to: false)
+    @concurrent func remove(_ ids: [AssetID], fromAlbum albumID: String) async throws {
+        try await setMembership(of: ids, inAlbum: albumID, to: false)
     }
 
-    private func setMembership(of id: AssetID, inAlbum albumID: String, to isMember: Bool) async throws {
-        let assetID = id.rawValue
+    private func setMembership(of ids: [AssetID], inAlbum albumID: String, to isMember: Bool) async throws {
+        guard !ids.isEmpty else { return }
+        let assetIDs = ids.map(\.rawValue)
         try await PHPhotoLibrary.shared().performChanges {
             guard let album = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumID], options: nil).firstObject,
                   let request = PHAssetCollectionChangeRequest(for: album) else { return }
-            let assets = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
+            let assets = PHAsset.fetchAssets(withLocalIdentifiers: assetIDs, options: nil)
             if isMember {
                 request.addAssets(assets)
             } else {
                 request.removeAssets(assets)
             }
         }
-        guard let album = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumID], options: nil).firstObject,
-              Self.memberIDs(of: album).contains(id) == isMember else {
+        guard let album = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumID], options: nil).firstObject else {
+            throw PhotoLibraryError.albumUnavailable
+        }
+        let members = Self.memberIDs(of: album)
+        guard isMember ? members.isSuperset(of: ids) : members.isDisjoint(with: ids) else {
             throw PhotoLibraryError.albumUnavailable
         }
     }

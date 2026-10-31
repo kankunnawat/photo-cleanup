@@ -38,8 +38,9 @@ nonisolated protocol PhotoLibrary: Sendable {
     func addToKeepAlbum(_ ids: [AssetID]) async throws
     /// Returns the new, empty album.
     func createAlbum(title: String) async throws -> AlbumInfo
-    func add(_ id: AssetID, toAlbum albumID: String) async throws
-    func remove(_ id: AssetID, fromAlbum albumID: String) async throws
+    /// One Photos change for all of `ids`.
+    func add(_ ids: [AssetID], toAlbum albumID: String) async throws
+    func remove(_ ids: [AssetID], fromAlbum albumID: String) async throws
     /// Writes the photo or video (the edited version if it has edits) to a new file from `ShareExports`.
     /// A Live Photo gives its still. Cancelling the task cancels an iCloud download.
     func exportOriginal(for id: AssetID) async throws -> URL
