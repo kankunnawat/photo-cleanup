@@ -1,7 +1,9 @@
 #!/bin/zsh
 # Boots a simulator, adds generated photos and grants full photo access to the app.
-# Each of the last [months] months (default 12) gets a small photo and a bigger one a minute older.
+# Each of the last [months] months (default 12) gets a small photo and a bigger one a minute older,
+# and 15 June 2020 gets a busy day of 72 photos, with 3 on each of the two days before.
 # It only adds media; run it again when the tests have used up the seeded photos.
+# Pass 0 months to add only the busy day, which no test uses up.
 # Usage: [BUNDLE_ID_PREFIX=<prefix>] scripts/seed-simulator.sh <simulator-udid> [months] [scratch-dir]
 # BUNDLE_ID_PREFIX must match the build setting (default com.example, as in Config/Base.xcconfig).
 set -euo pipefail

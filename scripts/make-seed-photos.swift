@@ -1,14 +1,16 @@
 // Writes colourful JPEGs with EXIF capture dates, two per month going back from today:
 // a small photo, and a big one captured a minute earlier, so a size sort has something to move.
 // Older months get smaller big photos, yet every big photo stays far bigger than every small one.
-// Usage: swift scripts/make-seed-photos.swift <output-dir> <months>
+// It also writes a busy day on a fixed date older than any pair: dozens of photos, a few more on the days
+// before, and the biggest one mid-day, so the Around this time grid runs several screens tall.
+// Usage: swift scripts/make-seed-photos.swift <output-dir> <months>; 0 months writes only the busy day.
 import CoreGraphics
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
 let arguments = CommandLine.arguments
-guard arguments.count == 3, let count = Int(arguments[2]), count > 0 else {
+guard arguments.count == 3, let count = Int(arguments[2]), count >= 0 else {
     FileHandle.standardError.write(Data("usage: make-seed-photos.swift <output-dir> <months>\n".utf8))
     exit(64)
 }
@@ -53,7 +55,8 @@ func fillNoise(_ context: CGContext, rows: Int, seed: Int) {
     }
 }
 
-for index in 0..<count {
+/// A gradient with translucent rings, coloured by `index` out of `count`.
+func makePhoto(index: Int, count: Int, width: Int, height: Int) -> CGContext {
     guard let context = CGContext(
         data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
         space: CGColorSpace(name: CGColorSpace.sRGB)!,
@@ -77,13 +80,18 @@ for index in 0..<count {
 
     let gradient = CGGradient(colorsSpace: nil, colors: [color(0, 0.95), color(0.15, 0.55)] as CFArray, locations: [0, 1])!
     context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: width, y: height), options: [])
+    let scale = CGFloat(width) / 1200
     for ring in 0..<6 {
         context.setFillColor(color(0.5 + Double(ring) * 0.05, 1).copy(alpha: 0.35)!)
-        let size = CGFloat(220 + ring * 90)
-        let center = CGPoint(x: CGFloat(200 + (index * 97 + ring * 151) % 800), y: CGFloat(300 + (index * 211 + ring * 173) % 1000))
+        let size = CGFloat(220 + ring * 90) * scale
+        let center = CGPoint(x: CGFloat(200 + (index * 97 + ring * 151) % 800) * scale, y: CGFloat(300 + (index * 211 + ring * 173) % 1000) * scale)
         context.fillEllipse(in: CGRect(x: center.x - size / 2, y: center.y - size / 2, width: size, height: size))
     }
+    return context
+}
 
+for index in 0..<count {
+    let context = makePhoto(index: index, count: count, width: width, height: height)
     // Noon, so the big photo a minute earlier stays in the same day and month.
     let captured = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Calendar.current.date(byAdding: .month, value: -index, to: Date())!)!
     write(context, to: outputDirectory.appendingPathComponent("seed-\(stamp)-\(index).jpg"), captured: captured)
@@ -91,4 +99,23 @@ for index in 0..<count {
     let band = count == 1 ? newestBand : newestBand - (newestBand - oldestBand) * index / (count - 1)
     fillNoise(context, rows: band, seed: index)
     write(context, to: outputDirectory.appendingPathComponent("seed-\(stamp)-\(index)-big.jpg"), captured: captured.addingTimeInterval(-60))
+}
+
+/// Before the busy day, then the busy day itself, one photo a minute from 9:00.
+let busyDays = [(dayOffset: -2, photos: 3), (dayOffset: -1, photos: 3), (dayOffset: 0, photos: 72)]
+let busyCount = busyDays.reduce(0) { $0 + $1.photos }
+let busyBiggest = busyDays.dropLast().reduce(0) { $0 + $1.photos } + busyDays.last!.photos / 2
+// The device calendar may not be Gregorian; the EXIF formatter is.
+let busyStart = exifFormatter.date(from: "2020:06:15 09:00:00")!
+let gregorian = Calendar(identifier: .gregorian)
+var busyIndex = 0
+for day in busyDays {
+    for minute in 0..<day.photos {
+        let context = makePhoto(index: busyIndex, count: busyCount, width: 600, height: 800)
+        // A saw-tooth of small sizes, so no order by date is also an order by size.
+        fillNoise(context, rows: busyIndex == busyBiggest ? 700 : busyIndex % 8 * 20, seed: busyIndex)
+        let captured = gregorian.date(byAdding: .day, value: day.dayOffset, to: busyStart)!.addingTimeInterval(TimeInterval(minute * 60))
+        write(context, to: outputDirectory.appendingPathComponent("seed-\(stamp)-busy-\(busyIndex).jpg"), captured: captured)
+        busyIndex += 1
+    }
 }
