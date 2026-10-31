@@ -39,7 +39,7 @@ A fresh reviewer then checks the album writes, the pending decision rules and th
 ## Out of scope
 
 - Opening the grid from the viewer, Free up space, Apply or the bulk screens.
-- Selecting a whole day, or dragging across tiles to select many.
+- Selecting a whole day at once (drag-to-multi-select across tiles shipped later).
 - Sharing many items at once.
 - Detecting workouts or similar photos automatically.
 - Changing the window width in the app.
