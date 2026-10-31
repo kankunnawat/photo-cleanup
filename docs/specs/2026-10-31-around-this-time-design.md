@@ -37,6 +37,10 @@ The same grid can also keep or delete the picked photos in one step.
   A selected tile shows a blue check mark; unselected tiles keep full brightness.
   Touch and hold opens the full-screen viewer over the grid's items, as on the other grids.
   The viewer offers Select or Deselect for the item, and its Album and Share buttons work as they do today.
+- Select in the toolbar turns on drag-to-multi-select (Done turns it off).
+  Outside that mode, taps and scrolling work as above.
+  Inside it, a drag across tiles paints a contiguous range on or off (the first tile decides select vs deselect), the selection count shows above the bottom bar, and dragging near the top or bottom edge auto-scrolls.
+  Keep, Delete and Add to album still act on the selection as a batch; nothing deletes without Apply.
 - The bottom bar holds three buttons: "Delete N", "Keep N" and "Add N to album".
   - Add to album opens the album picker for every selected item.
   - Keep and Delete count only selected items that are not protected, and are off at 0.
@@ -76,6 +80,8 @@ The same grid can also keep or delete the picked photos in one step.
   Undated assets are never in it.
 - The grid keeps its selection as `Set<AssetID>` and rebuilds its days when `model.revision` changes.
   Tiles are never removed by a decision, so the grid needs no frozen order.
+- `DragMultiSelect` (pure): hit-tests a drag point to a flat tile index (uniform grid or published frames) and paints a select/deselect range for one gesture.
+  The SwiftUI glue (`DragSelectOverlay`) is shared with Screenshots and Large videos.
 - `Route` gains `around(AssetID)`; the deck pushes it.
 - `PhotoLibrary.add(_:toAlbum:)` and `remove(_:fromAlbum:)` take `[AssetID]` and replace the single-item versions.
   `PhotoKitLibrary` does one `performChanges` per call and checks the album holds all of them, or none of them, afterwards.
@@ -119,7 +125,7 @@ The same grid can also keep or delete the picked photos in one step.
 ## Out of scope
 
 - Opening the grid from the viewer, Free up space, Apply or the bulk screens.
-- Selecting a whole day, or dragging across tiles to select many.
+- Selecting a whole day at once (drag-to-multi-select across tiles is in scope; see above).
 - Sharing many items at once.
 - Detecting workouts or similar photos automatically.
 - Changing the window width in the app.

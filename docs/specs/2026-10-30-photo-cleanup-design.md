@@ -128,6 +128,7 @@ An asset is in exactly one of these states:
 
 - Screenshots: grid of screenshot assets that are not protected, all selected; tap to deselect.
 - Large videos: grid of videos that are not protected, none selected; tap to select.
+- Both offer a Select control that turns on drag-to-multi-select across tiles (same `DragMultiSelect` logic as Around this time), with edge auto-scroll while dragging.
 - Sort from the toolbar: Screenshots offer newest first (the default) and biggest first; Large videos offer biggest first (the default) and newest first.
   The Large videos hint names the picked order.
 - The order is set when the screen opens or when you pick a sort, so sizes measured later never move a tile.
