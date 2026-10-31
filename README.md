@@ -90,6 +90,9 @@ xcodebuild test -project PhotoCleanup.xcodeproj -scheme PhotoCleanup \
   -destination 'platform=iOS Simulator,id=<simulator-udid>'
 ```
 
+The seed script adds a small and a big photo to each of the last 12 months, and 72 photos on 15 June 2020, with 3 on each of the two days before.
+A simulator seeded before the busy day existed needs only that day: `scripts/seed-simulator.sh <simulator-udid> 0`.
+
 The seed script grants photo access to `com.example.PhotoCleanup`, the default bundle ID.
 If `Config/Local.xcconfig` sets another prefix, pass the same one to the script:
 
