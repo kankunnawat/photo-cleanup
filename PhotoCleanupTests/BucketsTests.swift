@@ -132,7 +132,7 @@ struct FreeUpCandidatesTests {
     }
 }
 
-struct TrashableTests {
+struct UnprotectedTests {
     @Test func protectedIDsNeverReachPendingTrash() {
         let ids = ["plain", "fav", "album", "other"].map(AssetID.init)
         let protected = ProtectedSet(
@@ -144,7 +144,7 @@ struct TrashableTests {
         )
         var pending = PendingDecisions()
 
-        pending.set(.trash, for: Buckets.trashable(ids, protected: protected))
+        pending.set(.trash, for: Buckets.unprotected(ids, protected: protected))
 
         #expect(pending.trash == [AssetID("plain"), AssetID("other")])
     }

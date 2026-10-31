@@ -271,7 +271,12 @@ final class AppModel {
 
     /// Bulk modes go through here, so a protected asset never reaches pending trash.
     func queueTrash(_ ids: [AssetID]) {
-        pending.set(.trash, for: Buckets.trashable(ids, protected: protected))
+        pending.set(.trash, for: Buckets.unprotected(ids, protected: protected))
+    }
+
+    /// The keep twin of `queueTrash`: a protected asset is already safe, so it gets no decision.
+    func queueKeep(_ ids: [AssetID]) {
+        pending.set(.keep, for: Buckets.unprotected(ids, protected: protected))
     }
 
     func freeUpSelection(before cutoff: Date, kind: MediaFilter, order: AssetOrder) -> FreeUpSelection {
@@ -282,7 +287,7 @@ final class AppModel {
     func queueFreeUp(trash: [AssetID], keep: [AssetID]) {
         var updated = pending
         updated.set(.keep, for: keep)
-        updated.set(.trash, for: Buckets.trashable(trash, protected: protected))
+        updated.set(.trash, for: Buckets.unprotected(trash, protected: protected))
         pending = updated
     }
 

@@ -120,6 +120,17 @@ final class AlbumTests {
         #expect(members(of: "created-1", in: model) == [a, b])
     }
 
+    @Test func queueKeepAndQueueTrashSkipProtectedItems() async throws {
+        let (model, _) = await makeModel(albums: [album("trip", [a])])
+
+        model.queueKeep([a, b])
+        model.queueTrash([a, c])
+
+        #expect(model.pending.decision(for: a) == nil)
+        #expect(model.pending.keeps == [b])
+        #expect(model.pending.trash == [c])
+    }
+
     @Test func addingToASwitchedOffAlbumClearsNothing() async throws {
         let (model, _) = await makeModel(albums: [album("trip")], disabled: ["trip"])
         model.decide(.trash, for: a)

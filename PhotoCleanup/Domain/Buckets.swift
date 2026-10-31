@@ -28,8 +28,8 @@ nonisolated enum Buckets {
         ids.filter { isOpen($0, protected: protected, pending: pending) }
     }
 
-    /// The IDs a bulk mode may queue as trash: protected assets are dropped.
-    static func trashable(_ ids: [AssetID], protected: ProtectedSet) -> [AssetID] {
+    /// The IDs a bulk mode may queue as keep or trash: protected assets are dropped.
+    static func unprotected(_ ids: [AssetID], protected: ProtectedSet) -> [AssetID] {
         ids.filter { !protected.contains($0) }
     }
 
