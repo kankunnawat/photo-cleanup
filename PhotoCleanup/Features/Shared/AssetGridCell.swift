@@ -71,7 +71,8 @@ struct AssetGridCell: View {
                     Color.white.opacity(0.35)
                 }
             }
-            .modifier(BadgeOverlay(badge: badge))
+            // The Around grid's selection circle leaves no room in the top row for the badge's word.
+            .modifier(BadgeOverlay(badge: badge, showsText: selectionStyle != .pick))
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .contentShape(Rectangle())
             .dynamicTypeSize(...AssetGrid.largestOverlayText)
@@ -85,6 +86,7 @@ struct AssetGridCell: View {
 /// Draws a cell's badge; also used by the placeholder cell for assets that are gone.
 struct BadgeOverlay: ViewModifier {
     let badge: AssetGridCell.Badge?
+    var showsText = true
 
     /// Only the overlays switch; switching `content` itself would rebuild the thumbnail and flash it gray on every tap.
     func body(content: Content) -> some View {
@@ -99,9 +101,9 @@ struct BadgeOverlay: ViewModifier {
             }
             .overlay(alignment: badge == .takenBack ? .center : .topLeading) {
                 switch badge {
-                case .keep: BadgeLabel(text: "Keep", symbol: "heart.fill", background: .keepGreen)
-                case .delete: BadgeLabel(text: "Delete", symbol: "trash.fill", background: .red)
-                case .takenBack: BadgeLabel(text: "Taken back", symbol: "arrow.uturn.backward", background: .gray)
+                case .keep: BadgeLabel(text: "Keep", symbol: "heart.fill", background: .keepGreen, showsText: showsText)
+                case .delete: BadgeLabel(text: "Delete", symbol: "trash.fill", background: .red, showsText: showsText)
+                case .takenBack: BadgeLabel(text: "Taken back", symbol: "arrow.uturn.backward", background: .gray, showsText: showsText)
                 case nil: EmptyView()
                 }
             }
@@ -112,19 +114,27 @@ private struct BadgeLabel: View {
     let text: String
     let symbol: String
     let background: Color
+    let showsText: Bool
 
     var body: some View {
-        Label(text, systemImage: symbol)
-            .labelStyle(.titleAndIcon)
-            .font(.caption2.weight(.bold))
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(background, in: Capsule())
-            .padding(4)
-            .dynamicTypeSize(...AssetGrid.largestOverlayText)
+        Group {
+            if showsText {
+                Label(text, systemImage: symbol)
+                    .labelStyle(.titleAndIcon)
+            } else {
+                Label(text, systemImage: symbol)
+                    .labelStyle(.iconOnly)
+            }
+        }
+        .font(.caption2.weight(.bold))
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+        .foregroundStyle(.white)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(background, in: Capsule())
+        .padding(4)
+        .dynamicTypeSize(...AssetGrid.largestOverlayText)
     }
 }
 
