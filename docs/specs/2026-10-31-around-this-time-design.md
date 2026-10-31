@@ -103,6 +103,14 @@ The same grid can also keep or delete the picked photos in one step.
 - The albums design (2026-10-30) put "selecting many photos in a grid to add or share at once" out of scope.
   This design brings back adding many at once, from this grid only; sharing many stays out.
 - If pinching the card fights the swipe gesture in testing, the pinch is dropped and logged here; the button stays.
+  The pinch stayed: its UI test opens the grid and leaves the card undecided.
+- In the grid, the Keep and Delete badges show only their icon, because the word ran into the selection circle.
+  VoiceOver still reads the decision.
+- The grid's viewer offers Select and Deselect on a protected item too (`PreviewChoice.keepsActionsWhenProtected`), because an album add needs protected items selectable.
+- A tall window first opened at the top: the scroll ran before the lazy grid had laid out its rows.
+  The grid is now built once its days are in and scrolls to the card when it appears.
+  The seed script gained a busy day (72 photos on 15 June 2020, 3 on each of the two days before) for the test that proves it.
+- A tap on a row with only some items in the album sends every picked item to the album; the result is the same as adding only the missing ones.
 
 ## Not yet specified
 
