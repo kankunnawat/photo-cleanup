@@ -1,6 +1,6 @@
 # Around this time: design
 
-Status: waiting for approval.
+Status: approved with both recommendations (2026-10-31).
 
 ## Problem
 
