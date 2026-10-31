@@ -11,11 +11,20 @@ struct AssetGridCell: View {
         case takenBack
     }
 
+    enum SelectionStyle {
+        /// Bulk modes: a red check, and unselected tiles washed out.
+        case delete
+        /// Around this time: a blue check at full brightness.
+        case pick
+    }
+
     @Environment(AppModel.self) private var model
 
     let asset: AssetInfo
     var isSelected: Bool?
     var badge: Badge?
+    var selectionStyle = SelectionStyle.delete
+    var isLocked = false
 
     var body: some View {
         AssetThumbnail(id: asset.id)
@@ -43,12 +52,22 @@ struct AssetGridCell: View {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
                         .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, isSelected ? Color.red : Color.black.opacity(0.3))
+                        .foregroundStyle(.white, isSelected ? checkTint : Color.black.opacity(0.3))
                         .padding(4)
                 }
             }
+            .overlay(alignment: .bottomTrailing) {
+                if isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .shadow(radius: 2)
+                        .padding(5)
+                        .accessibilityLabel("Protected")
+                }
+            }
             .overlay {
-                if isSelected == false {
+                if isSelected == false, selectionStyle == .delete {
                     Color.white.opacity(0.35)
                 }
             }
@@ -56,6 +75,10 @@ struct AssetGridCell: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .contentShape(Rectangle())
             .dynamicTypeSize(...AssetGrid.largestOverlayText)
+    }
+
+    private var checkTint: Color {
+        selectionStyle == .delete ? .red : .accentColor
     }
 }
 

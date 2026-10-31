@@ -50,6 +50,7 @@ struct RootView: View {
         case .mode(.screenshots): BulkSelectView(mode: .screenshots)
         case .mode(.largeVideos): BulkSelectView(mode: .largeVideos)
         case .deck(let source): SwipeDeckView(source: source)
+        case .around(let id): AroundView(center: id)
         case .apply: ApplyView()
         case .settings: SettingsView()
         }

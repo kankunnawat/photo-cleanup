@@ -8,6 +8,7 @@ enum DeckSource: Hashable {
 enum Route: Hashable {
     case mode(CleanupMode)
     case deck(DeckSource)
+    case around(AssetID)
     case apply
     case settings
 }

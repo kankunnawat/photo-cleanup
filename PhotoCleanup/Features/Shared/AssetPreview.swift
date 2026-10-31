@@ -89,9 +89,10 @@ struct AssetPreview: View {
     private func bar(for asset: AssetInfo, position: Int) -> some View {
         // An album add from this viewer can protect the photo; offering the screen's actions then
         // would let a tap queue it again.
-        let choice = model.protected.contains(asset.id)
+        let offered = self.choice(asset)
+        let choice = model.protected.contains(asset.id) && !offered.keepsActionsWhenProtected
             ? PreviewChoice(status: .init(text: "Protected", tint: .keepGreen), actions: [])
-            : self.choice(asset)
+            : offered
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(details(of: asset))

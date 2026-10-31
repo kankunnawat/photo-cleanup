@@ -16,4 +16,6 @@ struct PreviewChoice {
 
     let status: Status?
     let actions: [Action]
+    /// The viewer drops a screen's actions for a protected item, unless they cannot queue a decision.
+    var keepsActionsWhenProtected = false
 }
