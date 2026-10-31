@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>photo-cleanup review: Around this time plan</title>
+<style>
+  :root {
+    /* Base: replace with the project's design tokens when it has them. */
+    --bg: #F7F6F3; --card: #FFFFFF; --line: #E4E1DB; --line2: #EEEBE6; --chip: #E8E6E1;
+    --ink: #1F1E1C; --ink2: #45423D; --muted: #6B6760; --faint: #8C877E;
+    --accent: #2F5FD0;
+    --sans: "IBM Plex Sans", -apple-system, "Helvetica Neue", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    /* Meaning: same in every project. Red = today/removed, green = new/decided, amber = open. */
+    --red: #B4412F; --green: #2E7D4F;
+    --amber: #8A4B0F; --amber-bg: #FDF4E8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 var(--sans); }
+  .page { max-width: 1120px; margin: 0 auto; padding: 64px 24px 96px; display: flex; flex-direction: column; gap: 32px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; font: 13px var(--mono); color: var(--muted); }
+  .chips span { padding: 4px 10px; border-radius: 999px; background: var(--chip); }
+  .chips .ask { background: var(--amber-bg); color: var(--amber); }
+  h1 { margin: 14px 0 12px; font-size: clamp(30px, 4.2vw, 44px); line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; }
+  .lede { margin: 0; font-size: 20px; color: var(--ink2); max-width: 900px; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 28px; }
+  .card h2 { margin: 0 0 12px; font-size: 20px; font-weight: 600; }
+  .chg { display: flex; gap: 14px; align-items: baseline; padding: 6px 0; }
+  .chg b { flex: none; width: 20px; font: 600 17px var(--mono); }
+  .add b { color: var(--green); } .del b { color: var(--red); }
+  .same b { color: var(--faint); } .same { color: var(--muted); }
+  .risk-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line2); font-size: 16px; }
+  .risk-row:last-child { border-bottom: 0; }
+  .risk-row div:first-child { font-weight: 500; }
+  .risk-row div:last-child { color: var(--ink2); }
+  .decide { display: flex; flex-direction: column; gap: 20px; }
+  .decide h3 { margin: 4px 0 0; font-size: 16px; font-weight: 600; color: var(--green); }
+  .qs, .done { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; max-width: 820px; }
+  .reply { margin: 0; padding: 14px 18px; border-radius: 12px; background: var(--ink); color: var(--bg); }
+  .done { gap: 6px; }
+  .done li { position: relative; padding-left: 25px; color: var(--ink2); }
+  .done li::before { content: "\2713"; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+  .out { display: flex; flex-direction: column; gap: 6px; font-size: 15px; color: var(--muted); }
+  .out p { margin: 0; }
+  .foot { font: 13px var(--mono); color: var(--faint); overflow-wrap: anywhere; }
+  code { font: 13.5px var(--mono); background: var(--chip); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } .risk-row { grid-template-columns: 1fr; gap: 4px; } }
+</style>
+</head>
+<body>
+<main class="page">
+
+<header>
+  <div class="chips"><span>photo-cleanup</span><span>Around this time plan</span><span class="ask">Needs your approval</span></div>
+  <h1>Approve: build the Around this time grid in eight checked steps, with one builder and one reviewer</h1>
+  <p class="lede">The batch album write comes first, because the picker and the grid both call it.</p>
+</header>
+
+<section class="grid">
+  <div class="card">
+    <h2>What changes</h2>
+    <div class="chg add"><b>+</b><div>Adding to and removing from an album take many photos in one Photos change. The single-photo versions go, and the deck and the viewer pass one photo. Unit tests on the fake. <code>PhotoLibrary</code>, <code>AppModel</code></div></div>
+    <div class="chg add"><b>+</b><div>A Keep that skips protected photos, the twin of the Delete that already does. Unit tests for both. <code>queueKeep</code></div></div>
+    <div class="chg add"><b>+</b><div>The album picker takes many photos. A row shows a check when all are in the album and a dash when some are. Unit test for the row state.</div></div>
+    <div class="chg add"><b>+</b><div>The 7-day window around a date, grouped by day. Unit tests for the edges, a month end, undated photos and the order. <code>Nearby</code></div></div>
+    <div class="chg add"><b>+</b><div>The grid screen with day headers, selection, badges, a lock for protected photos, the viewer and the Delete, Keep and Add to album bar. Screenshots in light and dark.</div></div>
+    <div class="chg add"><b>+</b><div>The fifth round button and the pinch on the deck card. Screenshot on a small iPhone screen.</div></div>
+    <div class="chg add"><b>+</b><div>UI tests for the grid album add and for the pinch. Then the full clean test run on the simulator.</div></div>
+    <div class="chg same"><b>=</b><div>A fresh reviewer, then an install on your iPhone.</div></div>
+  </div>
+  <div class="card">
+    <h2>Risk &rarr; answer</h2>
+    <div class="risk-row"><div>A batch write puts photos in the wrong album, or leaves a delete queued.</div><div>A fresh reviewer checks every album write and the delete queue rule. Unit tests pin the rule for many photos.</div></div>
+    <div class="risk-row"><div>Changing the album calls breaks the album features that work today.</div><div>Step 1 updates the existing album tests, and the existing album UI tests run in step 7.</div></div>
+    <div class="risk-row"><div>The pinch fights the swipe.</div><div>A UI test pinches the card, and the swipe tests still run. If the two fight, the pinch goes and the button stays.</div></div>
+    <div class="risk-row"><div>Five buttons do not fit on a small iPhone.</div><div>Step 6 checks the deck on a 375 pt wide simulator.</div></div>
+  </div>
+</section>
+
+<section class="card decide">
+  <h2>For you to decide</h2>
+  <p class="reply">Reply "approved" or say what to change.</p>
+  <h3>Already decided</h3>
+  <ul class="done">
+    <li>One builder makes it in its own worktree, because the album write runs through the library, the model, the picker and the grid.</li>
+    <li>A fresh reviewer checks the work before the install on your iPhone.</li>
+  </ul>
+</section>
+
+<div class="out">
+  <p><b>Left for later:</b> whether a 7-day window is the right width once you have used it on real days.</p>
+  <p><b>Not in this change:</b> opening the grid from other screens; selecting a whole day or dragging to select; sharing many photos at once; finding workouts or similar photos automatically; changing the window width in the app.</p>
+</div>
+
+<div class="foot">Full plan: docs/plans/2026-10-31-around-this-time.md</div>
+</main>
+</body>
+</html>
