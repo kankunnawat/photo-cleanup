@@ -21,33 +21,31 @@ struct AroundView: View {
         let picked = items.map(\.id).filter(selected.contains)
         let decidable = picked.filter { !model.protected.contains($0) }
         ScrollViewReader { proxy in
-            ScrollView {
-                LazyVGrid(columns: AssetGrid.columns, spacing: 3, pinnedViews: [.sectionHeaders]) {
-                    ForEach(days) { day in
-                        Section {
-                            ForEach(day.assets) { asset in
-                                tile(for: asset, in: items)
+            // Built once the days are in: scrolling to the card in the update that adds its tile does nothing.
+            if days.isEmpty {
+                ContentUnavailableView("Nothing around this time", systemImage: "photo.on.rectangle")
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: AssetGrid.columns, spacing: 3, pinnedViews: [.sectionHeaders]) {
+                        ForEach(days) { day in
+                            Section {
+                                ForEach(day.assets) { asset in
+                                    tile(for: asset, in: items)
+                                }
+                            } header: {
+                                Text(day.start.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 8)
+                                    .background(Color(.systemGroupedBackground))
+                                    .accessibilityAddTraits(.isHeader)
                             }
-                        } header: {
-                            Text(day.start.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 8)
-                                .background(Color(.systemGroupedBackground))
-                                .accessibilityAddTraits(.isHeader)
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
-            }
-            .assetPreview($preview, returningTo: proxy, choice: choice(for:))
-            .task(id: days.isEmpty) {
-                if !days.isEmpty { proxy.scrollTo(center, anchor: .center) }
-            }
-        }
-        .overlay {
-            if items.isEmpty {
-                ContentUnavailableView("Nothing around this time", systemImage: "photo.on.rectangle")
+                .onAppear { proxy.scrollTo(center, anchor: .center) }
+                .assetPreview($preview, returningTo: proxy, choice: choice(for:))
             }
         }
         .background(Color(.systemGroupedBackground))

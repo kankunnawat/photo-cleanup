@@ -1,7 +1,7 @@
 import XCTest
 
-/// Needs media from `scripts/seed-simulator.sh <udid>`: each seeded month has two photos on the same day.
-/// Leaves no photo in any album and no pending decision.
+/// Needs media from `scripts/seed-simulator.sh <udid>`: each seeded month has two photos on the same day,
+/// and June 2020 has a busy day several screens tall. Leaves no photo in any album and no pending decision.
 @MainActor
 final class AroundUITests: XCTestCase {
     private static let albumTitle = "UI Test"
@@ -83,6 +83,40 @@ final class AroundUITests: XCTestCase {
         app.navigationBars.buttons["BackButton"].tap()
         XCTAssertTrue(waitUntil { self.remaining.exists && self.remaining.label == count }, "The pinch decided the card")
         XCTAssertFalse(app.buttons["deck.done"].isEnabled, "The pinch left a pending decision")
+    }
+
+    func testTheGridOpensScrolledToTheCardOnABusyDay() throws {
+        app.launchToHome()
+        // Biggest first needs the sizes.
+        XCTAssertTrue(app.staticTexts["up to, on device"].waitForExistence(timeout: 30), "Sizes were still being measured")
+        app.buttons["mode.swipe"].tap()
+        let busyDay = try XCTUnwrap(Calendar(identifier: .gregorian).date(from: DateComponents(year: 2020, month: 6, day: 15)))
+        let rows = app.buttons.matching(identifier: "months.row")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10), "Swipe review showed no months; seed the simulator")
+        let row = rows.matching(NSPredicate(format: "label BEGINSWITH %@", busyDay.formatted(.dateTime.month(.wide).year()))).firstMatch
+        XCTAssertTrue(scrollUntilHittable(row), "Swipe review showed no busy month; run scripts/seed-simulator.sh <udid> 0")
+        row.tap()
+
+        // Newest first puts the last tile on top; biggest first, the busy day's middle.
+        for order in ["Newest first", "Biggest first"] {
+            app.buttons["deck.sort"].tap()
+            app.buttons[order].tap()
+            app.buttons["deck.around"].tap()
+            XCTAssertTrue(tiles.firstMatch.waitForExistence(timeout: 10), "The grid showed no tiles")
+            let card = selectedTiles.firstMatch
+            XCTAssertTrue(waitUntil(timeout: 5) { card.exists && card.isHittable }, "\(order): the grid did not open scrolled to the card's photo")
+            app.navigationBars.buttons["BackButton"].tap()
+        }
+        XCTAssertFalse(app.buttons["deck.done"].isEnabled, "The grid left a pending decision")
+    }
+
+    /// Scrolls the list down until `element` can be tapped; false when it never can.
+    private func scrollUntilHittable(_ element: XCUIElement) -> Bool {
+        for _ in 0..<10 {
+            if element.exists, element.isHittable { return true }
+            app.swipeUp()
+        }
+        return element.exists && element.isHittable
     }
 
     /// Opens the first month deck whose top card shares its day with another open photo; returns the month's title.
