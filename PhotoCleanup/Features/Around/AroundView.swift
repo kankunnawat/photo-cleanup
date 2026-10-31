@@ -76,12 +76,31 @@ struct AroundView: View {
             selectionStyle: .pick,
             isLocked: model.protected.contains(asset.id)
         )
+        .accessibilityElement(children: .combine)
         .id(asset.id)
         .onTapGesture { toggle(asset.id) }
         .opensPreview { preview = PreviewSession(items, showing: asset.id) }
+        .accessibilityLabel(label(for: asset))
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .accessibilityValue(isSelected ? "Selected" : "Not selected")
         .accessibilityIdentifier("around.tile")
+    }
+
+    /// The tile shows no date, so VoiceOver gets the day the header gives sighted users.
+    private func label(for asset: AssetInfo) -> String {
+        let badge: String? = switch model.pending.decision(for: asset.id) {
+        case .keep: "Keep"
+        case .trash: "Delete"
+        case nil: nil
+        }
+        let parts = [
+            asset.kind == .video ? "Video" : "Photo",
+            Formatting.day(asset.creationDate),
+            model.sizes[asset.id].map(Formatting.bytes),
+            badge,
+            model.protected.contains(asset.id) ? "Protected" : nil,
+        ]
+        return parts.compactMap(\.self).joined(separator: ", ")
     }
 
     private func bar(picked: [AssetID], decidable: [AssetID]) -> some View {
