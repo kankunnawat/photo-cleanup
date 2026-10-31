@@ -68,7 +68,7 @@ struct SwipeDeckView: View {
         .sensoryFeedback(.success, trigger: keptTick)
         .sensoryFeedback(.impact(weight: .heavy), trigger: trashedTick)
         .assetPreview($preview, choice: choice(for:))
-        .sheet(item: $albumTarget, onDismiss: refilter) { AlbumPicker(assetID: $0) }
+        .sheet(item: $albumTarget, onDismiss: refilter) { AlbumPicker(assetIDs: [$0]) }
         .onAppear {
             if deck == nil { deal() }
             refilter()

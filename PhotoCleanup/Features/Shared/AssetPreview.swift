@@ -58,7 +58,7 @@ struct AssetPreview: View {
         .environment(\.colorScheme, .dark)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("preview")
-        .sheet(item: $albumTarget) { AlbumPicker(assetID: $0) }
+        .sheet(item: $albumTarget) { AlbumPicker(assetIDs: [$0]) }
     }
 
     private var pager: some View {

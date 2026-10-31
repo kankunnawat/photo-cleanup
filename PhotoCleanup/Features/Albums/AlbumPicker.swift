@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Puts one photo into albums or takes it out. Each tap writes to Photos at once.
+/// Puts photos into albums or takes them out. Each tap writes to Photos at once, one change for all the photos.
 struct AlbumPicker: View {
     private enum Write: Equatable {
         case album(String)
@@ -10,7 +10,7 @@ struct AlbumPicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
 
-    let assetID: AssetID
+    let assetIDs: [AssetID]
 
     @State private var query = ""
     @State private var writing: Write?
@@ -45,7 +45,7 @@ struct AlbumPicker: View {
                 }
             }
             .accessibilityIdentifier("albums.sheet")
-            .navigationTitle("Add to album")
+            .navigationTitle(assetIDs.count == 1 ? "Add to album" : "Add \(assetIDs.count.formatted()) to album")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -62,7 +62,7 @@ struct AlbumPicker: View {
                 Button("Create", action: create)
                     .disabled(newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             } message: {
-                Text("The photo goes into the new album.")
+                Text(assetIDs.count == 1 ? "The photo goes into the new album." : "The \(assetIDs.count.formatted()) items go into the new album.")
             }
         }
         .presentationDetents([.medium, .large])
@@ -110,10 +110,10 @@ struct AlbumPicker: View {
     }
 
     private func row(for album: AlbumInfo) -> some View {
-        let isMember = album.assetIDs.contains(assetID)
+        let membership = AlbumMembership(of: assetIDs, in: album.assetIDs)
         let isProtected = !model.disabledAlbumIDs.contains(album.id)
         return Button {
-            toggle(album.id, isMember: isMember)
+            toggle(album.id, membership: membership)
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -131,8 +131,8 @@ struct AlbumPicker: View {
                 Spacer()
                 if writing == .album(album.id) {
                     ProgressView()
-                } else if isMember {
-                    Image(systemName: "checkmark")
+                } else if membership != .none {
+                    Image(systemName: membership == .all ? "checkmark" : "minus")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Color.accentColor)
                 }
@@ -140,16 +140,25 @@ struct AlbumPicker: View {
             .contentShape(.rect)
         }
         .tint(.primary)
-        .accessibilityValue(isMember ? "In album" : "Not in album")
+        .accessibilityValue(Self.value(of: membership))
         .accessibilityIdentifier("albums.row")
     }
 
-    private func toggle(_ albumID: String, isMember: Bool) {
+    private static func value(of membership: AlbumMembership) -> String {
+        switch membership {
+        case .all: "In album"
+        case .some: "Some in album"
+        case .none: "Not in album"
+        }
+    }
+
+    /// Fills the album when some items are missing; empties it of them only when it already holds them all.
+    private func toggle(_ albumID: String, membership: AlbumMembership) {
         perform(.album(albumID)) {
-            if isMember {
-                try await model.remove([assetID], fromAlbum: albumID)
+            if membership == .all {
+                try await model.remove(assetIDs, fromAlbum: albumID)
             } else {
-                try await model.add([assetID], toAlbum: albumID)
+                try await model.add(assetIDs, toAlbum: albumID)
             }
         }
     }
@@ -158,7 +167,7 @@ struct AlbumPicker: View {
         let title = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         perform(.newAlbum) {
-            try await model.createAlbum(titled: title, adding: [assetID])
+            try await model.createAlbum(titled: title, adding: assetIDs)
             query = ""
         }
     }
