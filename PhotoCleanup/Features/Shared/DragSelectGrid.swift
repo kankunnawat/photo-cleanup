@@ -43,7 +43,16 @@ private struct DragSelectOverlay: ViewModifier {
             .scrollDisabled(session != nil)
             .highPriorityGesture(isEnabled ? drag : nil)
             .onChange(of: isEnabled) { _, enabled in
-                if !enabled { endDrag() }
+                if !enabled {
+                    endDrag()
+                    isAbandoned = false
+                }
+            }
+            .onChange(of: ids) {
+                // The edge-scroll loop holds the list it started with, so a still finger would never hit move's check.
+                guard session != nil else { return }
+                endDrag()
+                isAbandoned = true
             }
             .task(id: scrollDirection) {
                 guard let scrollDirection else { return }
