@@ -157,17 +157,21 @@ final class AroundUITests: XCTestCase {
         let status = app.staticTexts["around.selectionCount"]
         XCTAssertTrue(status.waitForExistence(timeout: 5), "Select did not show the selection count")
         let screenful = tiles.allElementsBoundByIndex.filter(\.isHittable).count
-        let start = try XCTUnwrap(tilesAwayFromTheEdges().first { $0.value as? String == "Not selected" }, "No unselected tile on screen")
-        // The bottom bar's background starts 8 pt above the count text; the edge zone is the 56 pt above it.
+        let zone = tilesAwayFromTheEdges()
+        XCTAssertGreaterThan(zone.count, 4, "Too few tiles on screen to start a row down")
+        XCTAssertTrue(zone[0...4].allSatisfy { $0.value as? String == "Not selected" }, "The top two rows on screen were already selected")
+        let start = zone[4]
         let edge = app.coordinate(withNormalizedOffset: .zero)
-            .withOffset(CGVector(dx: start.frame.midX, dy: status.frame.minY - 8 - 28))
+            .withOffset(CGVector(dx: start.frame.midX, dy: gridBottom() - 28))
 
         start.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             .press(forDuration: 0.1, thenDragTo: edge, withVelocity: .default, thenHoldForDuration: 2)
 
         XCTAssertGreaterThan(pickedCount(), screenful, "Holding at the bottom edge did not select past one screen")
-        // The drag began on an unselected tile on screen, so a screen of only selected tiles has scrolled past it.
-        XCTAssertTrue(tilesAwayFromTheEdges().allSatisfy { $0.value as? String == "Selected" }, "Holding at the bottom edge did not scroll the grid")
+        // The row above the drag's first tile stays unselected, so it leaves the screen only if the grid scrolled.
+        let after = tilesAwayFromTheEdges()
+        XCTAssertFalse(after.isEmpty, "No tiles on screen after the drag")
+        XCTAssertTrue(after.allSatisfy { $0.value as? String == "Selected" }, "Holding at the bottom edge did not scroll the grid")
 
         app.buttons["around.dragSelect"].tap()
         app.navigationBars.buttons["BackButton"].tap()
@@ -193,10 +197,15 @@ final class AroundUITests: XCTestCase {
     /// With Select on: tiles clear of the pinned day header and both edge zones, in grid order.
     private func tilesAwayFromTheEdges() -> [XCUIElement] {
         let top = app.navigationBars.firstMatch.frame.maxY + 60
-        let bottom = app.staticTexts["around.selectionCount"].frame.minY - 8 - 60
+        let bottom = gridBottom() - 60
         return tiles.allElementsBoundByIndex
             .filter { $0.isHittable && $0.frame.midY > top && $0.frame.midY < bottom }
             .sorted { ($0.frame.minY, $0.frame.minX) < ($1.frame.minY, $1.frame.minX) }
+    }
+
+    /// With Select on: where the bottom bar starts, measured 16 pt above the count text.
+    private func gridBottom() -> CGFloat {
+        app.staticTexts["around.selectionCount"].frame.minY - 16
     }
 
     /// On screen, in grid order: an unselected tile, the tile two rows below it and every tile between.
