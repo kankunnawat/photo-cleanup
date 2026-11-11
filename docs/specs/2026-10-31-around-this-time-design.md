@@ -100,6 +100,7 @@ The same grid can also keep or delete the picked photos in one step.
   - Batch add puts every item in the album in one library call, clears every pending delete in one write, and keeps pending keeps.
   - Batch remove, and the all, some and none row states.
   - `queueKeep` and `queueTrash` skip protected items.
+  - `DragMultiSelect`: a drag selects or clears the range from its first tile, dragging back shrinks it, a miss keeps the last tile, and a changed list ends the drag.
 - UI test on the simulator, after `scripts/seed-simulator.sh`, which puts two photos on the same day each month:
   open a month deck, open the grid with the button, check the card's tile is selected, select the other photo of that day, add both to a "UI Test" album, go back and check the deck lost 2 cards, then remove both again so the test leaves no photo in any album.
 - UI test: pinching the top card closed opens the grid.
@@ -121,6 +122,9 @@ The same grid can also keep or delete the picked photos in one step.
 - A tap on a row with only some items in the album sends every picked item to the album; the result is the same as adding only the missing ones.
 - The albums design and this design both put dragging across tiles to select many out of scope.
   A later change brings it in for this grid and for the Screenshots and Large videos grids, behind a Select button so taps and scrolling work as before when it is off.
+- A finger held still at an edge also ends the drag when the list changes, but no test covers it.
+  A test would have to change the library while a finger is held, and the UI tests cannot do that.
+- Drag-select in Screenshots and Large videos has no UI test, because the seed script adds no screenshots or videos.
 
 ## Not yet specified
 
