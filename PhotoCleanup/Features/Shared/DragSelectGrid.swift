@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Collects each tile's frame in global space so a drag can hit-test without UIKit.
-struct GridTileFramesKey: PreferenceKey {
+private struct GridTileFramesKey: PreferenceKey {
     static let defaultValue: [Int: CGRect] = [:]
 
     static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
@@ -20,57 +20,36 @@ extension View {
     }
 }
 
-/// Frames keyed by flat grid index, ordered for `DragMultiSelect.index(at:frames:)`.
-enum GridTileFrames {
-    static func ordered(_ frames: [Int: CGRect], count: Int) -> [CGRect] {
-        (0..<count).map { frames[$0] ?? .null }
-    }
-}
-
-private struct ViewportFrameKey: PreferenceKey {
-    static let defaultValue: CGRect = .zero
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
-        value = nextValue()
-    }
-}
-
 /// Drag gesture that paints a `DragMultiSelect.Session` onto a selection, with edge auto-scroll.
-struct DragSelectOverlay: ViewModifier {
+private struct DragSelectOverlay: ViewModifier {
     let ids: [AssetID]
     @Binding var selected: Set<AssetID>
     var isEnabled: Bool
     var scrollProxy: ScrollViewProxy
-    var columns: Int = 4
+    var columns: Int
 
     @State private var frames: [Int: CGRect] = [:]
     @State private var session: DragMultiSelect.Session?
+    /// Set when the list changed under the drag; the rest of that drag paints nothing.
+    @State private var isAbandoned = false
     @State private var finger: CGPoint?
     @State private var viewport: CGRect = .zero
-    @State private var scrollDirection = 0
+    @State private var scrollDirection: DragMultiSelect.ScrollDirection?
 
     func body(content: Content) -> some View {
         content
             .onPreferenceChange(GridTileFramesKey.self) { frames = $0 }
-            .background {
-                GeometryReader { geo in
-                    Color.clear.preference(key: ViewportFrameKey.self, value: geo.frame(in: .global))
-                }
-            }
-            .onPreferenceChange(ViewportFrameKey.self) { viewport = $0 }
+            .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { viewport = $0 }
             .scrollDisabled(session != nil)
             .highPriorityGesture(isEnabled ? drag : nil)
             .onChange(of: isEnabled) { _, enabled in
-                if !enabled {
-                    session = nil
-                    finger = nil
-                    scrollDirection = 0
-                }
+                if !enabled { endDrag() }
             }
             .task(id: scrollDirection) {
-                guard scrollDirection != 0 else { return }
-                while !Task.isCancelled, scrollDirection != 0, session != nil {
-                    scrollTowardEdge()
-                    try? await Task.sleep(for: .milliseconds(16))
+                guard let scrollDirection else { return }
+                while !Task.isCancelled, session != nil {
+                    scrollOneRow(scrollDirection)
+                    try? await Task.sleep(for: .milliseconds(100))
                 }
             }
     }
@@ -79,46 +58,55 @@ struct DragSelectOverlay: ViewModifier {
         DragGesture(minimumDistance: 6, coordinateSpace: .global)
             .onChanged(changed)
             .onEnded { _ in
-                session = nil
-                finger = nil
-                scrollDirection = 0
+                endDrag()
+                isAbandoned = false
             }
     }
 
     private func changed(_ value: DragGesture.Value) {
+        guard !isAbandoned else { return }
         finger = value.location
-        let list = GridTileFrames.ordered(frames, count: ids.count)
         if session == nil {
             // Anchor is where the finger went down, even though the gesture starts after a short move.
-            guard let index = DragMultiSelect.index(at: value.startLocation, frames: list)
-                    ?? DragMultiSelect.index(at: value.location, frames: list) else { return }
-            let selectedIndices = Set(ids.indices.filter { selected.contains(ids[$0]) })
-            let started = DragMultiSelect.Session(anchor: index, selected: selectedIndices)
-            session = started
-            selected = started.selectedIDs(current: index, ids: ids)
-        } else if let current = session, let index = DragMultiSelect.index(at: value.location, frames: list) {
-            selected = current.selectedIDs(current: index, ids: ids)
+            guard let anchor = hit(value.startLocation) ?? hit(value.location) else { return }
+            session = DragMultiSelect.Session(anchor: anchor, ids: ids, selected: selected)
         }
-        let delta = DragMultiSelect.autoScrollDelta(
+        paint(hit(value.location))
+        let direction = DragMultiSelect.autoScrollDirection(
             pointerY: value.location.y,
             viewportMinY: viewport.minY,
             viewportMaxY: viewport.maxY
         )
-        let direction = delta == 0 ? 0 : (delta < 0 ? -1 : 1)
         if direction != scrollDirection { scrollDirection = direction }
-        if direction != 0 { scrollTowardEdge() }
     }
 
-    private func scrollTowardEdge() {
-        guard let currentSession = session, scrollDirection != 0, !ids.isEmpty else { return }
-        let list = GridTileFrames.ordered(frames, count: ids.count)
-        let current = finger.flatMap { DragMultiSelect.index(at: $0, frames: list) } ?? currentSession.anchor
-        let step = max(columns, 1) * scrollDirection
-        let target = min(max(current + step, 0), ids.count - 1)
-        scrollProxy.scrollTo(ids[target], anchor: scrollDirection < 0 ? .top : .bottom)
-        if let finger, let index = DragMultiSelect.index(at: finger, frames: GridTileFrames.ordered(frames, count: ids.count)) {
-            selected = currentSession.selectedIDs(current: index, ids: ids)
+    private func scrollOneRow(_ direction: DragMultiSelect.ScrollDirection) {
+        paint(finger.flatMap(hit))
+        guard let lastHit = session?.lastHit else { return }
+        let step = direction == .down ? columns : -columns
+        let target = min(max(lastHit + step, 0), ids.count - 1)
+        scrollProxy.scrollTo(ids[target], anchor: direction == .down ? .bottom : .top)
+    }
+
+    private func paint(_ index: Int?) {
+        guard var current = session else { return }
+        guard let selection = current.move(to: index, ids: ids) else {
+            endDrag()
+            isAbandoned = true
+            return
         }
+        session = current
+        if selection != selected { selected = selection }
+    }
+
+    private func hit(_ point: CGPoint) -> Int? {
+        DragMultiSelect.index(at: point, frames: (0..<ids.count).map { frames[$0] ?? .null })
+    }
+
+    private func endDrag() {
+        session = nil
+        finger = nil
+        scrollDirection = nil
     }
 }
 
@@ -129,7 +117,7 @@ extension View {
         selected: Binding<Set<AssetID>>,
         enabled: Bool,
         proxy: ScrollViewProxy,
-        columns: Int = 4
+        columns: Int
     ) -> some View {
         modifier(DragSelectOverlay(
             ids: ids,
