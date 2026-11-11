@@ -12,8 +12,6 @@ struct BulkSelectView: View {
     @State private var order: AssetOrder
     // Fixed when the screen opens or the order changes. Decided or protected items drop out, and new ones go last.
     @State private var frozen = FrozenOrder([])
-    /// When on, a drag across tiles paints a selection range; scrolling uses the edges.
-    /// When off, taps and scrolling work as they always have.
     @State private var isDragSelecting = false
 
     init(mode: CleanupMode) {

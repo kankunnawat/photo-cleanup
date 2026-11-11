@@ -10,8 +10,6 @@ struct AroundView: View {
     @State private var selected: Set<AssetID>
     @State private var preview: PreviewSession?
     @State private var isPickingAlbum = false
-    /// When on, a drag across tiles paints a selection range; scrolling uses the edges.
-    /// When off, taps and scrolling work as they always have.
     @State private var isDragSelecting = false
 
     init(center: AssetID) {
