@@ -80,7 +80,8 @@ The same grid can also keep or delete the picked photos in one step.
   Undated assets are never in it.
 - The grid keeps its selection as `Set<AssetID>` and rebuilds its days when `model.revision` changes.
   Tiles are never removed by a decision, so the grid needs no frozen order.
-- `DragMultiSelect` (pure): hit-tests a drag point to a flat tile index (uniform grid or published frames) and paints a select/deselect range for one gesture.
+- `DragMultiSelect` (pure): hit-tests a drag point against the frames the tiles publish and paints a select/deselect range for one gesture.
+  A drag ends if the list changes under it, as when iCloud adds a photo, so painted indices never land on other assets.
   The SwiftUI glue (`DragSelectOverlay`) is shared with Screenshots and Large videos.
 - `Route` gains `around(AssetID)`; the deck pushes it.
 - `PhotoLibrary.add(_:toAlbum:)` and `remove(_:fromAlbum:)` take `[AssetID]` and replace the single-item versions.
@@ -102,6 +103,7 @@ The same grid can also keep or delete the picked photos in one step.
 - UI test on the simulator, after `scripts/seed-simulator.sh`, which puts two photos on the same day each month:
   open a month deck, open the grid with the button, check the card's tile is selected, select the other photo of that day, add both to a "UI Test" album, go back and check the deck lost 2 cards, then remove both again so the test leaves no photo in any album.
 - UI test: pinching the top card closed opens the grid.
+- UI tests on the busy day: with Select on, a drag across two rows selects the tiles it crosses and a second drag from a selected tile clears them; holding near the bottom edge scrolls and keeps selecting; with Select off, a swipe scrolls and selects nothing.
 - Full `xcodebuild clean test` on the simulator, then install on the iPhone.
 
 ## Deviations
@@ -117,6 +119,8 @@ The same grid can also keep or delete the picked photos in one step.
   The grid is now built once its days are in and scrolls to the card when it appears.
   The seed script gained a busy day (72 photos on 15 June 2020, 3 on each of the two days before) for the test that proves it.
 - A tap on a row with only some items in the album sends every picked item to the album; the result is the same as adding only the missing ones.
+- The albums design and this design both put dragging across tiles to select many out of scope.
+  A later change brings it in for this grid and for the Screenshots and Large videos grids, behind a Select button so taps and scrolling work as before when it is off.
 
 ## Not yet specified
 
