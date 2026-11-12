@@ -14,6 +14,7 @@ Photo Cleanup is a free, open-source iPhone app that clears photo storage and ke
 
 The app deletes nothing until you tap the delete button on the review screen.
 To see a photo full screen, or play a video, before you decide, touch and hold it in a grid or tap the card in the swipe deck.
+Pinch or double-tap a photo there to zoom in and check its detail.
 
 ## Privacy
 

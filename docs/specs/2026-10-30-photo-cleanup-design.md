@@ -165,6 +165,13 @@ An asset is in exactly one of these states:
 - Photos show at screen size.
   Videos play with the system controls, and only the item on screen plays.
 - Swipe left or right to move through the same items, in grid order.
+- Pinch a photo to zoom in, up to the zoom where one photo pixel covers two screen pixels, kept between 2x and 4x.
+  A zoom that ends below 1.05x returns to fit.
+  Double-tap zooms in on the tapped point, to 2.5x or the maximum when that is lower; a second double-tap returns to fit.
+  A drag pans a zoomed photo, and a swipe at its edge moves to the next item, as in Photos.
+  When a zoom settles, the viewer loads a sharper copy of the photo, no bigger than the original, without moving it.
+  Leaving the page returns the photo to fit and drops the sharper copy.
+  Videos do not zoom.
 - A bar shows the date, size, video length and position, plus the item's decision on that screen and a button that flips it, the same as a tile tap.
   In the swipe deck the bar has Keep and Delete, which decide the card like a swipe and close the viewer.
 - Closing the viewer scrolls the grid to the last item shown.
@@ -209,7 +216,7 @@ An asset is in exactly one of these states:
 
 - How "Shuffle" weights old versus recent assets.
 - Whether the size cache should refresh when Photos edits an asset in place.
-- Pinch to zoom on photos.
+- Whether a 4x zoom is enough to judge sharpness on 48 MP photos.
 
 ## Out of scope
 
