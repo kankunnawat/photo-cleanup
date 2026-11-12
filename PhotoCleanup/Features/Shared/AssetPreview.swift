@@ -75,6 +75,7 @@ struct AssetPreview: View {
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $page)
         .scrollIndicators(.hidden)
+        .accessibilityIdentifier("preview.pager")
     }
 
     @ViewBuilder
@@ -82,7 +83,7 @@ struct AssetPreview: View {
         if asset.kind == .video {
             PreviewVideo(id: asset.id, isCurrent: isCurrent)
         } else {
-            PreviewImage(id: asset.id)
+            ZoomablePhoto(asset: asset, isCurrent: isCurrent)
         }
     }
 
