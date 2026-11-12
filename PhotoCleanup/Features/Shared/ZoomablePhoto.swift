@@ -138,6 +138,9 @@ private final class ZoomScrollView: UIScrollView, UIScrollViewDelegate {
             // The bar can change height while zoomed, as after an album add; the zoom stays, and showFit sizes
             // the photo for the new page on the next return to fit.
             centre()
+            // An axis where the zoomed photo is still smaller than the page has nothing to scroll, so keep it centred.
+            if contentSize.width < bounds.width { contentOffset.x = -contentInset.left }
+            if contentSize.height < bounds.height { contentOffset.y = -contentInset.top }
         }
     }
 

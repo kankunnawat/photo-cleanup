@@ -77,6 +77,7 @@ final class ZoomUITests: XCTestCase {
         point(centre).doubleTap()
         XCTAssertTrue(waitUntil { self.isZoomed(from: fit) }, "Double-tap did not zoom")
         let status = app.staticTexts["preview.status"]
+        let pageHeight = pager.frame.height
 
         let row = openAlbumPicker()
         if row.waitForExistence(timeout: 2) {
@@ -92,6 +93,7 @@ final class ZoomUITests: XCTestCase {
         closeAlbumPicker()
         XCTAssertTrue(waitUntil { status.label == "Protected" }, "Viewer did not show the photo as protected")
         settle()
+        XCTAssertNotEqual(pager.frame.height, pageHeight, accuracy: 1, "The page kept its size, so this test no longer covers a resize")
         XCTAssertTrue(isZoomed(from: fit), "The album add reset the zoom: \(String(describing: photoFrame)) vs \(fit)")
 
         let sameRow = openAlbumPicker()
