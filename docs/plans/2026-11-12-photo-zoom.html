@@ -69,11 +69,12 @@
     <div class="chg add"><b>+</b><div>Double-tap zooms in on the point you tapped. Double-tap again to return to fit.</div></div>
     <div class="chg add"><b>+</b><div>A drag pans a zoomed photo. A swipe at its edge moves to the next photo, as in Photos. Leaving a photo returns it to fit.</div></div>
     <div class="chg add"><b>+</b><div>When a zoom settles, the viewer loads a sharper copy, no bigger than the original, without moving the photo. <code>ZoomablePhoto</code> <code>ZoomMath</code></div></div>
-    <div class="chg add"><b>+</b><div>Unit tests for the zoom rules. UI tests for pinch, double-tap, pan, paging while zoomed, and Close.</div></div>
+    <div class="chg add"><b>+</b><div>Unit tests for the zoom rules. UI tests for pinch, double-tap, pan, paging while zoomed, an album add while zoomed, and Close.</div></div>
     <div class="chg same"><b>=</b><div>Videos, the swipe deck card and grid tiles do not zoom. A tap on a tile still flips its choice.</div></div>
   </div>
   <div class="card">
     <h2>Risk &rarr; answer</h2>
+    <div class="risk-row"><div>Adding a zoomed photo to an album resets the zoom.</div><div>Review found it: the bar gets shorter once the photo is protected. A zoomed photo now keeps its zoom when the page changes size, and a UI test covers it.</div></div>
     <div class="risk-row"><div>You get stuck on a zoomed photo.</div><div>A swipe at the zoomed edge moves on, as the prototype showed. A zoom that ends below 1.05x returns exactly to fit.</div></div>
     <div class="risk-row"><div>The sharper copy makes the photo jump.</div><div>The photo's frame comes from its pixel shape, not from the loaded image. In the prototype, a copy swapped in mid-zoom left the photo where it was.</div></div>
     <div class="risk-row"><div>A big photo uses too much memory.</div><div>The sharper copy is sized to the zoom on screen, capped at the photo's own size, and dropped when you leave the photo.</div></div>

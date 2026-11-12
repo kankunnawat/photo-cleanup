@@ -61,6 +61,7 @@ A throwaway prototype built both candidates on the simulator and ran the same ch
    - A pinch makes the photo bigger and keeps the position. Pinching back returns the photo to its fit frame, and a swipe then pages.
    - A double-tap makes the photo bigger, and a drag moves it without changing the position. Swipes while zoomed reach the edge and then page. Paging back shows the photo at fit.
    - Close works while zoomed.
+   - An album add while zoomed keeps the zoom, although the bar gets shorter.
    XCUITest pinches only about the element's centre and crashes on a pinch near scale 1, so the tests avoid both.
    The tests delete nothing, so they do not use up seed photos.
    Check: the new tests pass.
@@ -77,7 +78,9 @@ A throwaway prototype built both candidates on the simulator and ran the same ch
 
 ## Deviations
 
-- None yet.
+- Review found that adding a zoomed photo to an album reset the zoom: the photo becomes protected, the bar loses its button, and the taller page re-fitted the photo.
+  A zoomed photo now keeps its zoom when the page changes size, and fits the new size on its next return to fit.
+- The photo's fitted size is rounded down to whole device pixels, because a floating-point overshoot could make a photo at fit wider than the page.
 
 ## Not yet specified
 
