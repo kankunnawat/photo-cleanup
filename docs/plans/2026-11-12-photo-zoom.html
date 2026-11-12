@@ -57,8 +57,8 @@
 <main class="page">
 
 <header>
-  <div class="chips"><span>photo-cleanup</span><span>Pinch to zoom plan</span><span class="ask">Needs your approval</span></div>
-  <h1>Approve: pinch or double-tap a photo in the viewer to zoom in on a sharper copy</h1>
+  <div class="chips"><span>photo-cleanup</span><span>Pinch to zoom plan</span><span>Approved 2026-11-12</span></div>
+  <h1>Approved: pinch or double-tap a photo in the viewer to zoom in on a sharper copy</h1>
   <p class="lede">You check a photo's detail at up to 4x before you keep or delete it, and a swipe at the zoomed edge still moves to the next photo.</p>
 </header>
 
@@ -82,13 +82,10 @@
 </section>
 
 <section class="card decide">
-  <h2>For you to decide</h2>
-  <ol class="qs">
-    <li><div><b>How far should zoom go?</b>I recommend up to 4x, and never less than 2x: a big photo zooms until one of its pixels fills two screen pixels, and a small or blurry photo still zooms enough to show the blur.</div></li>
-  </ol>
-  <p class="reply">Reply "approved" to take the recommendation, or say what to change.</p>
-  <h3>Already decided</h3>
+  <h2>Decided</h2>
   <ul class="done">
+    <li>Zoom goes up to 4x and never less than 2x: a big photo zooms until one of its pixels fills two screen pixels, and a small or blurry photo still zooms enough to show the blur.</li>
+    <li>Every viewer gets zoom: the grids, Apply, Around this time and the swipe deck.</li>
     <li>UIKit's zooming view on each photo page, chosen over SwiftUI's pinch gesture. Only it lets a swipe at the zoomed edge move on, and its UI tests can read where the photo is.</li>
     <li>Double-tap to zoom, as in Photos.</li>
     <li>Videos do not zoom.</li>
