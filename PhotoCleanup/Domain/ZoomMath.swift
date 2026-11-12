@@ -3,7 +3,7 @@ import CoreGraphics
 /// Zoom rules for a photo in the viewer.
 nonisolated enum ZoomMath {
     /// A zoom that ends below this rests at fit, so no photo stays just above fit.
-    static let fitSnap: CGFloat = 1.05
+    private static let fitSnap: CGFloat = 1.05
 
     /// The size `content` takes when scaled to fit `container`; zero when `content` has no area.
     static func fitted(_ content: CGSize, in container: CGSize) -> CGSize {

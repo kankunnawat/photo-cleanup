@@ -1,6 +1,6 @@
 import XCTest
 
-/// Pinch and double-tap zoom in the viewer. Needs media from `scripts/seed-simulator.sh <udid>`. Deletes nothing.
+/// Pinch and double-tap zoom in the viewer. Needs media from `scripts/seed-simulator.sh <udid>`. Deletes nothing and leaves no photo in any album.
 ///
 /// XCUITest pinches only about the element's centre, and its pinch near scale 1 crashes the runner,
 /// so the tests pinch by 2 and by 0.3 only.
@@ -63,17 +63,43 @@ final class ZoomUITests: XCTestCase {
         let atEdge = try XCTUnwrap(photoFrame)
         XCTAssertEqual(atEdge.maxX, pager.frame.maxX, accuracy: 1, "The first swipe did not reach the photo's right edge: \(atEdge)")
 
-        var swipes = 0
-        while swipes < 3, positionLabel.label == position {
-            pager.swipeLeft()
-            swipes += 1
-            settle()
-        }
-        XCTAssertNotEqual(positionLabel.label, position, "Swipes at the zoomed edge never paged")
+        pager.swipeLeft()
+        XCTAssertTrue(waitUntil { self.positionLabel.label != position }, "A swipe at the zoomed edge did not page")
 
         pager.swipeRight()
         XCTAssertTrue(waitUntil { self.positionLabel.label == position }, "Did not page back")
         XCTAssertTrue(waitUntil { self.isFit(fit) }, "The photo was still zoomed after paging away and back: \(String(describing: photoFrame)) vs \(fit)")
+    }
+
+    /// An album add protects the photo, and the bar loses its button and gets shorter, which makes the page taller.
+    func testAnAlbumAddWhileZoomedKeepsTheZoom() throws {
+        let fit = try openViewer()
+        point(centre).doubleTap()
+        XCTAssertTrue(waitUntil { self.isZoomed(from: fit) }, "Double-tap did not zoom")
+        let status = app.staticTexts["preview.status"]
+
+        let row = openAlbumPicker()
+        if row.waitForExistence(timeout: 2) {
+            row.tap()
+        } else {
+            app.buttons["albums.new"].tap()
+            let name = app.alerts.textFields.firstMatch
+            XCTAssertTrue(name.waitForExistence(timeout: 5), "New album did not ask for a name")
+            name.typeText(Self.albumTitle)
+            app.alerts.buttons["Create"].tap()
+        }
+        XCTAssertTrue(waitUntil { row.exists && row.value as? String == "In album" }, "Row did not show the photo in the album")
+        closeAlbumPicker()
+        XCTAssertTrue(waitUntil { status.label == "Protected" }, "Viewer did not show the photo as protected")
+        settle()
+        XCTAssertTrue(isZoomed(from: fit), "The album add reset the zoom: \(String(describing: photoFrame)) vs \(fit)")
+
+        let sameRow = openAlbumPicker()
+        XCTAssertTrue(waitUntil { sameRow.exists && sameRow.value as? String == "In album" }, "Picker did not show the photo in the album")
+        sameRow.tap()
+        XCTAssertTrue(waitUntil { sameRow.value as? String == "Not in album" }, "Row did not show the photo taken out")
+        closeAlbumPicker()
+        XCTAssertTrue(waitUntil { status.label != "Protected" }, "The photo stayed protected after it left the album")
     }
 
     func testCloseWorksWhileZoomed() throws {
@@ -86,6 +112,27 @@ final class ZoomUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private static let albumTitle = "UI Test"
+
+    /// Opens the picker from the viewer and searches for the test album; returns its row, which may not exist yet.
+    private func openAlbumPicker() -> XCUIElement {
+        app.buttons["preview.album"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["albums.sheet"].waitForExistence(timeout: 10), "Album picker did not open")
+        let search = app.textFields["albums.search"]
+        search.tap()
+        search.typeText(Self.albumTitle)
+        return app.buttons.matching(identifier: "albums.row")
+            .matching(NSPredicate(format: "label BEGINSWITH %@", Self.albumTitle))
+            .firstMatch
+    }
+
+    private func closeAlbumPicker() {
+        let done = app.buttons["albums.done"]
+        XCTAssertTrue(waitUntil { done.isEnabled }, "Done stayed off after the write")
+        done.tap()
+        XCTAssertTrue(waitUntil { !self.app.descendants(matching: .any)["albums.sheet"].exists }, "Done did not close the picker")
+    }
 
     private var pager: XCUIElement { app.descendants(matching: .any)["preview.pager"] }
 
@@ -120,9 +167,19 @@ final class ZoomUITests: XCTestCase {
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: screen.x, dy: screen.y))
     }
 
-    /// Lets zoom and paging animations finish.
+    /// Waits for zoom, pan and paging animations to finish: the photo's frame reads the same twice in a row.
     private func settle() {
-        _ = XCTWaiter().wait(for: [XCTestExpectation(description: "settle")], timeout: 0.8)
+        var last = photoFrame
+        for _ in 0..<20 {
+            pause(0.25)
+            let now = photoFrame
+            if now != nil, now == last { return }
+            last = now
+        }
+    }
+
+    private func pause(_ seconds: TimeInterval) {
+        _ = XCTWaiter().wait(for: [XCTestExpectation(description: "pause")], timeout: seconds)
     }
 
     /// Opens the viewer on the biggest Free up photo and returns its frame at fit.
@@ -134,7 +191,7 @@ final class ZoomUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["up to"].waitForExistence(timeout: 30), "Sizes were still being measured")
         app.buttons["freeUp.sort"].tap()
         app.buttons["Biggest first"].tap()
-        settle()
+        pause(0.8)
         tile.press(forDuration: 1)
         XCTAssertTrue(app.buttons["preview.close"].waitForExistence(timeout: 10), "Touch and hold did not open the viewer")
         XCTAssertTrue(waitUntil { self.photoFrame != nil }, "The photo never showed")

@@ -104,7 +104,10 @@ private final class ZoomScrollView: UIScrollView, UIScrollViewDelegate {
     var photoShape: CGSize = .zero {
         didSet { if photoShape != oldValue { setNeedsLayout() } }
     }
+    /// The page size and photo shape the image view was last sized for.
     private var fittedFor: (bounds: CGSize, shape: CGSize)?
+    /// The page size the insets were last set for.
+    private var centredFor: CGSize?
 
     init() {
         super.init(frame: .zero)
@@ -128,25 +131,39 @@ private final class ZoomScrollView: UIScrollView, UIScrollViewDelegate {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        // Scrolling lays out too; fit again only when the page size or the photo's shape changes.
-        guard fittedFor?.bounds != bounds.size || fittedFor?.shape != photoShape else { return }
-        fittedFor = (bounds.size, photoShape)
-        zoomScale = 1
-        let fitted = ZoomMath.fitted(photoShape, in: bounds.size)
-        imageView.frame = CGRect(origin: .zero, size: fitted == .zero ? bounds.size : fitted)
-        contentSize = imageView.frame.size
-        showFit()
+        // Scrolling lays out too, so this acts only on a new page size or photo shape.
+        if fittedFor?.shape != photoShape || (zoomScale == 1 && fittedFor?.bounds != bounds.size) {
+            showFit()
+        } else if centredFor != bounds.size {
+            // The bar can change height while zoomed, as after an album add; the zoom stays, and showFit sizes
+            // the photo for the new page on the next return to fit.
+            centre()
+        }
     }
 
     func showFit() {
         zoomScale = 1
+        if fittedFor?.bounds != bounds.size || fittedFor?.shape != photoShape {
+            fittedFor = (bounds.size, photoShape)
+            imageView.frame = CGRect(origin: .zero, size: fittedSize())
+            contentSize = imageView.frame.size
+        }
         centre()
         contentOffset = CGPoint(x: -contentInset.left, y: -contentInset.top)
+    }
+
+    /// The photo's size at fit in whole device pixels, so a floating-point overshoot can never make a photo at fit scroll.
+    private func fittedSize() -> CGSize {
+        let fitted = ZoomMath.fitted(photoShape, in: bounds.size)
+        guard fitted != .zero else { return bounds.size }
+        let scale = max(traitCollection.displayScale, 1)
+        return CGSize(width: (fitted.width * scale).rounded(.down) / scale, height: (fitted.height * scale).rounded(.down) / scale)
     }
 
     /// Centres the photo with insets while it is smaller than the page. Moving the image view instead would throw off
     /// the double-tap's offset by the letterbox. Rounding down keeps a photo at fit from scrolling by a fraction.
     private func centre() {
+        centredFor = bounds.size
         let x = max(((bounds.width - contentSize.width) / 2).rounded(.down), 0)
         let y = max(((bounds.height - contentSize.height) / 2).rounded(.down), 0)
         contentInset = UIEdgeInsets(top: y, left: x, bottom: y, right: x)
