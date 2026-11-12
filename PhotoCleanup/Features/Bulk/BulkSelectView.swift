@@ -12,6 +12,7 @@ struct BulkSelectView: View {
     @State private var order: AssetOrder
     // Fixed when the screen opens or the order changes. Decided or protected items drop out, and new ones go last.
     @State private var frozen = FrozenOrder([])
+    @State private var isDragSelecting = false
 
     init(mode: CleanupMode) {
         self.mode = mode
@@ -47,8 +48,9 @@ struct BulkSelectView: View {
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                             LazyVGrid(columns: AssetGrid.columns, spacing: 3) {
-                                ForEach(items) { asset in
+                                ForEach(Array(items.enumerated()), id: \.element.id) { index, asset in
                                     AssetGridCell(asset: asset, isSelected: isSelected(asset.id))
+                                        .reportsGridTileFrame(index: index)
                                         .onTapGesture { toggle(asset.id) }
                                         .opensPreview { preview = PreviewSession(items, showing: asset.id) }
                                 }
@@ -56,6 +58,13 @@ struct BulkSelectView: View {
                         }
                         .padding()
                     }
+                    .dragSelect(
+                        ids: items.map(\.id),
+                        selected: selectionBinding(for: items),
+                        enabled: isDragSelecting,
+                        proxy: proxy,
+                        columns: AssetGrid.columns.count
+                    )
                     .assetPreview($preview, returningTo: proxy, choice: choice(for:))
                 }
             }
@@ -63,7 +72,13 @@ struct BulkSelectView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(mode.title)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                if !items.isEmpty {
+                    Button(isDragSelecting ? "Done" : "Select") {
+                        isDragSelecting.toggle()
+                    }
+                    .accessibilityIdentifier("bulk.dragSelect")
+                }
                 SortMenu(selection: $order, orders: Self.orders(for: mode), label: \.label, id: "bulk.sort")
             }
         }
@@ -94,9 +109,12 @@ struct BulkSelectView: View {
     }
 
     private var hint: String {
-        startsSelected
-            ? "All selected. Tap a screenshot to keep it. Touch and hold to view it."
-            : "\(order.label). Tap a video to select it. Touch and hold to play it."
+        if isDragSelecting {
+            return "Drag across items to select many. Tap one to flip it. Touch and hold to view it."
+        }
+        return startsSelected
+            ? "All selected. Tap a screenshot to keep it. Touch and hold to view it. Select to drag across many."
+            : "\(order.label). Tap a video to select it. Touch and hold to play it. Select to drag across many."
     }
 
     private func freeze() {
@@ -128,5 +146,20 @@ struct BulkSelectView: View {
         } else {
             toggled.insert(id)
         }
+    }
+
+    /// Drag-select paints a real selection set; map it back onto the inverted `toggled` store.
+    private func selectionBinding(for items: [AssetInfo]) -> Binding<Set<AssetID>> {
+        Binding(
+            get: { Set(items.map(\.id).filter(isSelected)) },
+            set: { newValue in
+                let all = Set(items.map(\.id))
+                if startsSelected {
+                    toggled = all.subtracting(newValue)
+                } else {
+                    toggled = newValue.intersection(all)
+                }
+            }
+        )
     }
 }

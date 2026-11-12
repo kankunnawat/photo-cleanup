@@ -230,7 +230,7 @@
     </div>
     </div>
     <div class="words">
-      <p>The grid shows every photo and video in the 7 days around the card, across month ends, including ones you already decided or protected. A tap selects a tile, and touch and hold opens it full screen. One tap on an album adds every selected photo in one Photos change. A dash means some of them are in the album already; a check means all are.</p>
+      <p>The grid shows every photo and video in the 7 days around the card, across month ends, including ones you already decided or protected. A tap selects a tile, and touch and hold opens it full screen. After you tap Select, a drag across tiles picks many at once, and holding near the top or bottom edge scrolls. A drag stops if the photo list changes under it, so it never lands on other photos. One tap on an album adds every selected photo in one Photos change. A dash means some of them are in the album already; a check means all are.</p>
       <p class="small">Names: <code>Nearby</code>, <code>Route.around</code>, <code>AlbumPicker</code>, <code>AssetGridCell</code></p>
     </div>
   </article>
@@ -252,12 +252,12 @@
     <div class="kicker">4 &middot; Where it goes</div>
     <h2>One new screen, the album writes take many photos</h2>
     <div class="map" role="img" aria-label="What the change adds and changes, and what it leaves alone">
-      <div class="kind"><b>Screens<span>4</span></b><div class="blocks"><span class="blk new">Around this time grid</span><span class="blk hit">Swipe deck</span><span class="blk hit">Album picker</span><span class="blk hit">Grid tile</span></div></div>
+      <div class="kind"><b>Screens<span>6</span></b><div class="blocks"><span class="blk new">Around this time grid</span><span class="blk hit">Swipe deck</span><span class="blk hit">Album picker</span><span class="blk hit">Grid tile</span><span class="blk hit">Screenshots</span><span class="blk hit">Large videos</span></div></div>
       <div class="kind"><b>Photo access<span>3</span></b><div class="blocks"><span class="blk hit">Photo library protocol</span><span class="blk hit">PhotoKit version</span><span class="blk hit">In-memory fake for tests</span></div></div>
       <div class="kind"><b>App model<span>3</span></b><div class="blocks"><span class="blk hit">Album writes take many</span><span class="blk new">Keep that skips protected</span><span class="blk new">7-day window by day</span></div></div>
       <div class="kind"><b>Navigation<span>1</span></b><div class="blocks"><span class="blk new">Around this time route</span></div></div>
-      <div class="kind"><b>Tests<span>3</span></b><div class="blocks"><span class="blk new">Window and batch unit tests</span><span class="blk new">Grid album UI test</span><span class="blk new">Pinch UI test</span></div></div>
-      <div class="kind"><b>Unchanged<span>4</span></b><div class="blocks"><span class="blk same">Apply</span><span class="blk same">Free up space</span><span class="blk same">Screenshots</span><span class="blk same">Large videos</span></div></div>
+      <div class="kind"><b>Tests<span>4</span></b><div class="blocks"><span class="blk new">Window and batch unit tests</span><span class="blk new">Grid album UI test</span><span class="blk new">Pinch UI test</span><span class="blk new">Drag-select unit and UI tests</span></div></div>
+      <div class="kind"><b>Unchanged<span>2</span></b><div class="blocks"><span class="blk same">Apply</span><span class="blk same">Free up space</span></div></div>
       <div class="legend"><span>+ new</span><span>~ changed</span><span>&minus; removed</span><span>= unchanged</span></div>
     </div>
     <p class="small">Names: <code>NearbyDay</code>, <code>Nearby.days(around:in:calendar:)</code>, <code>remove(_:fromAlbum:)</code>, <code>createAlbum(titled:adding:)</code></p>
@@ -294,7 +294,8 @@
 
 <div class="out">
   <p><b>Left for later:</b> whether 7 days is the right width once you have used it on real days.</p>
-  <p><b>Not in this change:</b> opening the grid from other screens; selecting a whole day or dragging to select; sharing many photos at once; finding workouts or similar photos automatically; changing the window width in the app.</p>
+  <p><b>Changed later:</b> this design and the albums design left dragging across tiles out. It now works in this grid and in Screenshots and Large videos, after you tap Select.</p>
+  <p><b>Not in this change:</b> opening the grid from other screens; selecting a whole day at once; sharing many photos at once; finding workouts or similar photos automatically; changing the window width in the app.</p>
 </div>
 
 <div class="foot">Full spec: docs/specs/2026-10-31-around-this-time-design.md</div>

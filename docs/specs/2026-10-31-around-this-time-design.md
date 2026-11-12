@@ -37,6 +37,10 @@ The same grid can also keep or delete the picked photos in one step.
   A selected tile shows a blue check mark; unselected tiles keep full brightness.
   Touch and hold opens the full-screen viewer over the grid's items, as on the other grids.
   The viewer offers Select or Deselect for the item, and its Album and Share buttons work as they do today.
+- Select in the toolbar turns on drag-to-multi-select (Done turns it off).
+  Outside that mode, taps and scrolling work as above.
+  Inside it, a drag across tiles paints a contiguous range on or off (the first tile decides select vs deselect), the selection count shows above the bottom bar, and dragging near the top or bottom edge auto-scrolls.
+  Keep, Delete and Add to album still act on the selection as a batch; nothing deletes without Apply.
 - The bottom bar holds three buttons: "Delete N", "Keep N" and "Add N to album".
   - Add to album opens the album picker for every selected item.
   - Keep and Delete count only selected items that are not protected, and are off at 0.
@@ -76,6 +80,9 @@ The same grid can also keep or delete the picked photos in one step.
   Undated assets are never in it.
 - The grid keeps its selection as `Set<AssetID>` and rebuilds its days when `model.revision` changes.
   Tiles are never removed by a decision, so the grid needs no frozen order.
+- `DragMultiSelect` (pure): hit-tests a drag point against the frames the tiles publish and paints a select/deselect range for one gesture.
+  A drag ends if the list changes under it, as when iCloud adds a photo, so painted indices never land on other assets.
+  The SwiftUI glue (`DragSelectOverlay`) is shared with Screenshots and Large videos.
 - `Route` gains `around(AssetID)`; the deck pushes it.
 - `PhotoLibrary.add(_:toAlbum:)` and `remove(_:fromAlbum:)` take `[AssetID]` and replace the single-item versions.
   `PhotoKitLibrary` does one `performChanges` per call and checks the album holds all of them, or none of them, afterwards.
@@ -93,9 +100,11 @@ The same grid can also keep or delete the picked photos in one step.
   - Batch add puts every item in the album in one library call, clears every pending delete in one write, and keeps pending keeps.
   - Batch remove, and the all, some and none row states.
   - `queueKeep` and `queueTrash` skip protected items.
+  - `DragMultiSelect`: a drag selects or clears the range from its first tile, dragging back shrinks it, a miss keeps the last tile, and a changed list ends the drag.
 - UI test on the simulator, after `scripts/seed-simulator.sh`, which puts two photos on the same day each month:
   open a month deck, open the grid with the button, check the card's tile is selected, select the other photo of that day, add both to a "UI Test" album, go back and check the deck lost 2 cards, then remove both again so the test leaves no photo in any album.
 - UI test: pinching the top card closed opens the grid.
+- UI tests on the busy day: with Select on, a drag across two rows selects the tiles it crosses and a second drag from a selected tile clears them; holding near the bottom edge scrolls and keeps selecting; with Select off, a swipe scrolls and selects nothing.
 - Full `xcodebuild clean test` on the simulator, then install on the iPhone.
 
 ## Deviations
@@ -111,6 +120,11 @@ The same grid can also keep or delete the picked photos in one step.
   The grid is now built once its days are in and scrolls to the card when it appears.
   The seed script gained a busy day (72 photos on 15 June 2020, 3 on each of the two days before) for the test that proves it.
 - A tap on a row with only some items in the album sends every picked item to the album; the result is the same as adding only the missing ones.
+- The albums design and this design both put dragging across tiles to select many out of scope.
+  A later change brings it in for this grid and for the Screenshots and Large videos grids, behind a Select button so taps and scrolling work as before when it is off.
+- A finger held still at an edge also ends the drag when the list changes, but no test covers it.
+  A test would have to change the library while a finger is held, and the UI tests cannot do that.
+- Drag-select in Screenshots and Large videos has no UI test, because the seed script adds no screenshots or videos.
 
 ## Not yet specified
 
@@ -119,7 +133,7 @@ The same grid can also keep or delete the picked photos in one step.
 ## Out of scope
 
 - Opening the grid from the viewer, Free up space, Apply or the bulk screens.
-- Selecting a whole day, or dragging across tiles to select many.
+- Selecting a whole day at once (drag-to-multi-select across tiles is in scope; see above).
 - Sharing many items at once.
 - Detecting workouts or similar photos automatically.
 - Changing the window width in the app.

@@ -10,6 +10,7 @@ struct AroundView: View {
     @State private var selected: Set<AssetID>
     @State private var preview: PreviewSession?
     @State private var isPickingAlbum = false
+    @State private var isDragSelecting = false
 
     init(center: AssetID) {
         self.center = center
@@ -20,6 +21,7 @@ struct AroundView: View {
         let items = days.flatMap(\.assets)
         let picked = items.map(\.id).filter(selected.contains)
         let decidable = picked.filter { !model.protected.contains($0) }
+        let indexByID = Dictionary(uniqueKeysWithValues: items.enumerated().map { ($1.id, $0) })
         ScrollViewReader { proxy in
             // Built once the days are in: scrolling to the card in the update that adds its tile does nothing.
             if days.isEmpty {
@@ -30,7 +32,9 @@ struct AroundView: View {
                         ForEach(days) { day in
                             Section {
                                 ForEach(day.assets) { asset in
-                                    tile(for: asset, in: items)
+                                    if let index = indexByID[asset.id] {
+                                        tile(for: asset, in: items, index: index)
+                                    }
                                 }
                             } header: {
                                 Text(day.start.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
@@ -44,6 +48,13 @@ struct AroundView: View {
                     }
                     .padding(.horizontal)
                 }
+                .dragSelect(
+                    ids: items.map(\.id),
+                    selected: $selected,
+                    enabled: isDragSelecting,
+                    proxy: proxy,
+                    columns: AssetGrid.columns.count
+                )
                 .onAppear { proxy.scrollTo(center, anchor: .center) }
                 .assetPreview($preview, returningTo: proxy, choice: choice(for:))
             }
@@ -51,11 +62,30 @@ struct AroundView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(isDragSelecting ? "Done" : "Select") {
+                    isDragSelecting.toggle()
+                }
+                .accessibilityIdentifier("around.dragSelect")
+            }
+        }
         .onChange(of: model.revision, initial: true) { rebuild() }
         .sensoryFeedback(.selection, trigger: selected)
         .sheet(isPresented: $isPickingAlbum) { AlbumPicker(assetIDs: picked) }
         .safeAreaInset(edge: .bottom) {
-            bar(picked: picked, decidable: decidable)
+            VStack(spacing: 0) {
+                if isDragSelecting {
+                    Text(picked.isEmpty ? "Drag across items to select them" : "\(Formatting.items(picked.count)) selected · drag to adjust")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 8)
+                        .accessibilityIdentifier("around.selectionCount")
+                }
+                bar(picked: picked, decidable: decidable)
+            }
+            .background(.bar)
         }
     }
 
@@ -65,7 +95,7 @@ struct AroundView: View {
         return (window.lowerBound..<window.upperBound).formatted(.interval.month(.abbreviated).day())
     }
 
-    private func tile(for asset: AssetInfo, in items: [AssetInfo]) -> some View {
+    private func tile(for asset: AssetInfo, in items: [AssetInfo], index: Int) -> some View {
         let isSelected = selected.contains(asset.id)
         return AssetGridCell(
             asset: asset,
@@ -76,6 +106,7 @@ struct AroundView: View {
         )
         .accessibilityElement(children: .combine)
         .id(asset.id)
+        .reportsGridTileFrame(index: index)
         .onTapGesture { toggle(asset.id) }
         .opensPreview { preview = PreviewSession(items, showing: asset.id) }
         .accessibilityLabel(label(for: asset))
@@ -119,7 +150,6 @@ struct AroundView: View {
             .disabled(picked.isEmpty)
         }
         .padding()
-        .background(.bar)
     }
 
     private func barButton(_ title: String, tint: Color, id: String, action: @escaping () -> Void) -> some View {
