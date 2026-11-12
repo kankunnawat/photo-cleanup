@@ -75,6 +75,7 @@
   <div class="card">
     <h2>Risk &rarr; answer</h2>
     <div class="risk-row"><div>Adding a zoomed photo to an album resets the zoom.</div><div>Review found it: the bar gets shorter once the photo is protected. A zoomed photo now keeps its zoom when the page changes size, and a UI test covers it.</div></div>
+    <div class="risk-row"><div>A photo at fit swallows your first swipe.</div><div>Review found a tiny rounding overshoot could make a photo a hair wider than the page. Its size at fit is now rounded down to whole pixels.</div></div>
     <div class="risk-row"><div>You get stuck on a zoomed photo.</div><div>A swipe at the zoomed edge moves on, as the prototype showed. A zoom that ends below 1.05x returns exactly to fit.</div></div>
     <div class="risk-row"><div>The sharper copy makes the photo jump.</div><div>The photo's frame comes from its pixel shape, not from the loaded image. In the prototype, a copy swapped in mid-zoom left the photo where it was.</div></div>
     <div class="risk-row"><div>A big photo uses too much memory.</div><div>The sharper copy is sized to the zoom on screen, capped at the photo's own size, and dropped when you leave the photo.</div></div>
